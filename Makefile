@@ -16,6 +16,6 @@ shellcheck:
 
 install:
 
-	install -vDm 755 aspe "$(BIN_DIR)/aspe"
+	install -vDm 755 aspe/aspe "$(BIN_DIR)/aspe"
 
 .PHONY: check install shellcheck
