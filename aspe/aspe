@@ -9,6 +9,10 @@ _aspe() {
     git \
       clone \
       "${_arch}/archlinux/packaging/packages/${_pkg}"
+    [[ ! "$?" -eq 0 ]] && \
+      git \
+        clone \
+	"https://aur.archlinux.org/packages/${_pkg}"
   done
 }
 
