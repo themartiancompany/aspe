@@ -20,7 +20,7 @@ _pkgs=("$@")
 
 [[ ${#} < 1 ]] && \
   echo \
-    'Usage: aspe [pkgs]
+    'Usage: aspe [pkgs]'
 
 _aspe \
   "${_pkgs[@]}"
