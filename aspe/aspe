@@ -6,9 +6,10 @@ _aspe() {
     _arch='https://gitlab.archlinux.org'
   _pkgs=("$@")
   for _pkg in "${_pkgs[@]}"; do
-    git \
-      clone \
-      "${_arch}/archlinux/packaging/packages/${_pkg}"
+    GIT_TERMINAL_PROMPT=0 \
+      git \
+        clone \
+       "${_arch}/archlinux/packaging/packages/${_pkg}"
     [[ ! "$?" -eq 0 ]] && \
       git \
         clone \
