@@ -19,7 +19,7 @@ _git_repo() {
     echo \
       "${_http}/${_pkg}"
   fi
-  if [["${_pub}" == "ur" ]]; then
+  if [[ "${_pub}" == "ur" ]]; then
     _http="http://github.com"
     _ns="themartiancompany"
     echo \
