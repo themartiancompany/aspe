@@ -1,27 +1,89 @@
 #!/usr/bin/env bash
 
+# Get source from a selected publisher
+# $1: publisher (archlinux,
+#                aur,
+#                ur)
+_git_repo() {
+  local \
+    _pub="${1}" \
+    _pkg="${2}" \
+    _http
+  if [[ "${_pub}" == "archlinux" ]]; then
+    _http='https://gitlab.archlinux.org'
+    echo \
+      "${_http}/${_pub}/packaging/packages/${_pkg}"
+  fi
+  if [[ "${_pub}" == "aur" ]]; then
+    _http='https://aur.archlinux.org'
+    echo \
+      "${_http}/${_pkg}"
+  fi
+  if [["${_pub}" == "ur" ]]; then
+    _http="http://github.com"
+    _ns="themartiancompany"
+    echo \
+      "${_http}/${_ns}/${_pkg}-${_pub}"
+  fi
+}
+
 _aspe() {
   local \
+    _pub="${1}"
+  shift 1
+  local \
     _pkgs=() \
-    _arch='https://gitlab.archlinux.org'
-  _pkgs=("$@")
-  for _pkg in "${_pkgs[@]}"; do
+  _pkgs=(
+    "$@")
+  for \
+    _pkg in \
+      "${_pkgs[@]}"; do
     GIT_TERMINAL_PROMPT=0 \
       git \
         clone \
-       "${_arch}/archlinux/packaging/packages/${_pkg}"
+	  "$(_git_repo \
+	       "${_pub}")"
     [[ ! "$?" -eq 0 ]] && \
+      _pub="aur" && \
       git \
         clone \
-	"https://aur.archlinux.org/packages/${_pkg}"
+          "$(_git_repo \
+               "${_pub}" \
+	       "${_pkg}")"
+    [[ ! "$?" -eq 0 ]] && \
+      _pub="ur" && \
+      git \
+        clone \
+          "$(_git_repo \
+               "${_pub}" \
+	       "${_pkg}")"
+
   done
 }
 
-_pkgs=("$@")
-
-[[ ${#} < 1 ]] && \
+_usage() {
   echo \
     'Usage: aspe [pkgs]'
+}
+
+_pkgs=(
+  "$@")
+
+while getopts 'p:vh?' arg; do
+    case "${arg}" in
+        p) override_pub="${OPTARG}" ;;
+        h|?) _usage ;;
+        *)
+            _msg_error \
+	      "Invalid argument '${arg}'" 0
+            _usage
+            ;;
+    esac
+done
+
+[[ ${override_pub} == "" ]] && \
+  override_pub="arch"
 
 _aspe \
+  "${override_pub}" \
   "${_pkgs[@]}"
