@@ -1,4 +1,22 @@
 #!/usr/bin/env bash
+#
+# SPDX-License-Identifier: AGPL-3.0
+
+set -e -u
+shopt -s extglob
+
+# Control the environment
+umask 0022
+export LC_ALL="C.UTF-8"
+# LC_ALL=C.UTF-8, unlike LC_ALL=C, does not override LANGUAGE.
+# See https://sourceware.org/bugzilla/show_bug.cgi?id=16621 \
+# and https://savannah.gnu.org/bugs/?62815
+[[ -v LANGUAGE ]] && \
+  unset LANGUAGE
+[[ -v SOURCE_DATE_EPOCH ]] || \
+  printf -v SOURCE_DATE_EPOCH '%(%s)T' -1
+export SOURCE_DATE_EPOCH
+
 
 # Get source from a selected publisher
 # $1: publisher (archlinux,
@@ -79,11 +97,19 @@ while getopts 'p:h?' arg; do
     esac
 done
 
+shift $((OPTIND - 1))
+
 _pkgs=(
   "$@")
 
 [[ "${override_pub}" == "" ]] && \
   override_pub="archlinux"
+
+if (( $# < 1 )); then
+  _msg_error \
+    "No packages specified"
+  _usage
+fi
 
 _aspe \
   "${override_pub}" \
