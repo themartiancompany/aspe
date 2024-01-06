@@ -42,7 +42,8 @@ _aspe() {
       git \
         clone \
 	  "$(_git_repo \
-	       "${_pub}")"
+	       "${_pub}" \
+	       "${_pkg}")"
     [[ ! "$?" -eq 0 ]] && \
       _pub="aur" && \
       git \
@@ -66,10 +67,7 @@ _usage() {
     'Usage: aspe [pkgs]'
 }
 
-_pkgs=(
-  "$@")
-
-while getopts 'p:vh?' arg; do
+while getopts 'p:h?' arg; do
     case "${arg}" in
         p) override_pub="${OPTARG}" ;;
         h|?) _usage ;;
@@ -81,8 +79,11 @@ while getopts 'p:vh?' arg; do
     esac
 done
 
-[[ ${override_pub} == "" ]] && \
-  override_pub="arch"
+_pkgs=(
+  "$@")
+
+[[ "${override_pub}" == "" ]] && \
+  override_pub="archlinux"
 
 _aspe \
   "${override_pub}" \
