@@ -64,21 +64,22 @@ _aspe() {
 	  "$(_git_repo \
 	       "${_pub}" \
 	       "${_pkg}")"
-    [[ ! "$?" -eq 0 ]] && \
-      _pub="aur" && \
+    if ! [[ "$?" -eq 0 ]]; then
+      _pub="aur"
       git \
         clone \
           "$(_git_repo \
                "${_pub}" \
 	       "${_pkg}")"
-    [[ ! "$?" -eq 0 ]] && \
+    fi
+    if ! [[ "$?" -eq 0 ]]; then
       _pub="ur" && \
       git \
         clone \
           "$(_git_repo \
                "${_pub}" \
 	       "${_pkg}")"
-
+    fi
   done
 }
 
