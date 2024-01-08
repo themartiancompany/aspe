@@ -7,16 +7,24 @@ _globals() {
   shopt -s extglob
   
   # Control the environment
-  umask 0022
-  export LC_ALL="C.UTF-8"
+  umask \
+    0022
+  export \
+    LC_ALL="C.UTF-8"
   # LC_ALL=C.UTF-8, unlike LC_ALL=C, does not override LANGUAGE.
   # See https://sourceware.org/bugzilla/show_bug.cgi?id=16621 \
   # and https://savannah.gnu.org/bugs/?62815
   [[ -v LANGUAGE ]] && \
-    unset LANGUAGE
+    unset \
+      LANGUAGE
   [[ -v SOURCE_DATE_EPOCH ]] || \
-    printf -v SOURCE_DATE_EPOCH '%(%s)T' -1
-  export SOURCE_DATE_EPOCH
+    printf \
+      -v \
+        SOURCE_DATE_EPOCH \
+	'%(%s)T' \
+	-1
+  export \
+    SOURCE_DATE_EPOCH
   override_pub=""
 }
 
@@ -55,32 +63,31 @@ _aspe() {
     _pkgs=() \
   _pkgs=(
     "$@")
+  export \
+    GIT_TERMINAL_PROMPT=0
   for \
     _pkg in \
       "${_pkgs[@]}"; do
-    GIT_TERMINAL_PROMPT=0 \
       git \
         clone \
 	  "$(_git_repo \
 	       "${_pub}" \
-	       "${_pkg}")"
-    if [[ "$?" -eq 0 ]]; then
-      _pub="aur"
+	       "${_pkg}")" || \
+      _pub="aur" && \
       git \
         clone \
           "$(_git_repo \
                "${_pub}" \
-	       "${_pkg}")"
-    fi
-    if [[ "$?" -eq 0 ]]; then
+	       "${_pkg}")" || \
       _pub="ur" && \
       git \
         clone \
           "$(_git_repo \
                "${_pub}" \
 	       "${_pkg}")"
-    fi
   done
+  unset \
+    GIT_TERMINAL_PROMPT
 }
 
 _usage() {
