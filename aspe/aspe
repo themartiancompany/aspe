@@ -72,19 +72,19 @@ _aspe() {
         clone \
 	  "$(_git_repo \
 	       "${_pub}" \
-	       "${_pkg}")" || \
+	       "${_pkg}")" || ( \
       _pub="aur" && \
       git \
         clone \
           "$(_git_repo \
                "${_pub}" \
-	       "${_pkg}")" || \
+	       "${_pkg}")" ) || ( \
       _pub="ur" && \
       git \
         clone \
           "$(_git_repo \
                "${_pub}" \
-	       "${_pkg}")"
+	       "${_pkg}")" )
   done
   unset \
     GIT_TERMINAL_PROMPT
@@ -93,6 +93,22 @@ _aspe() {
 _usage() {
   echo \
     "Usage: ${app_name} [-p <publisher>] [pkgs]"
+}
+
+# Show an ERROR message then exit with status
+# $1: message string
+# $2: exit code number (with 0 does not exit)
+_msg_error() {
+  local \
+    _msg="${1}" \
+    _error=${2}
+  printf \
+    '[%s] ERROR: %s\n' \
+    "${app_name}" \
+    "${_msg}" >&2
+  if (( _error > 0 )); then
+    exit "${_error}"
+  fi
 }
 
 _globals
