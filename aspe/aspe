@@ -135,7 +135,7 @@ _pkgs=(
 
 if (( $# < 1 )); then
   _msg_error \
-    "No packages specified"
+    "No packages specified" 0
   _usage
 fi
 
