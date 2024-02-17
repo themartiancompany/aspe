@@ -58,6 +58,18 @@ _git_repo() {
   fi
 }
 
+_git_clone() {
+  local \
+    _pub="${1}" \
+    _pkg="${2}"
+  git \
+    clone \
+      "$( \
+        _git_repo \
+	  "${_pub}" \
+	  "${_pkg}")"
+}
+
 _aspe() {
   local \
     _pub="${1}"
@@ -71,23 +83,17 @@ _aspe() {
   for \
     _pkg in \
       "${_pkgs[@]}"; do
-      git \
-        clone \
-	  "$(_git_repo \
-	       "${_pub}" \
-	       "${_pkg}")" || ( \
-      _pub="aur" && \
-      git \
-        clone \
-          "$(_git_repo \
-               "${_pub}" \
-	       "${_pkg}")" ) || ( \
-      _pub="ur" && \
-      git \
-        clone \
-          "$(_git_repo \
-               "${_pub}" \
-	       "${_pkg}")" )
+    _git_clone \
+      "${_pub}" \
+      "${_pkg}" || ( \
+    _pub="aur" && \
+    _git_clone \
+      "${_pub}" \
+      "${_pkg}" ) || ( \
+    _pub="ur" && \
+    _git_clone \
+      "${_pub}" \
+      "${_pkg}" )
   done
   unset \
     GIT_TERMINAL_PROMPT
