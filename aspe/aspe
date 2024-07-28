@@ -72,7 +72,8 @@ _git_clone() {
       "$( \
         _git_repo \
 	  "${_pub}" \
-	  "${_pkg}")"
+	  "${_pkg}")" \
+      "${_pkg}"
 }
 
 _aspe() {
