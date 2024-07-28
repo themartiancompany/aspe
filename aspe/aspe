@@ -89,17 +89,22 @@ _aspe() {
   for \
     _pkg in \
       "${_pkgs[@]}"; do
-    _git_clone \
-      "${_pub}" \
-      "${_pkg}" || ( \
-    _pub="aur" && \
-    _git_clone \
-      "${_pub}" \
-      "${_pkg}" ) || ( \
-    _pub="ur" && \
-    _git_clone \
-      "${_pub}" \
-      "${_pkg}" )
+    if [[ "${_pub}" == "etherscan" ]]; then
+      _ipfs_cat \
+	"$(_etherscan_get)"
+    elif [[ "${_pub}" != "etherscan" ]]; then
+      _git_clone \
+        "${_pub}" \
+        "${_pkg}" || ( \
+      _pub="aur" && \
+      _git_clone \
+        "${_pub}" \
+        "${_pkg}" ) || ( \
+      _pub="ur" && \
+      _git_clone \
+        "${_pub}" \
+        "${_pkg}" )
+    fi
   done
   unset \
     GIT_TERMINAL_PROMPT
