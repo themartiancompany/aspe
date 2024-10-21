@@ -22,6 +22,7 @@ _requirements() {
 
 # shellcheck disable=SC2034
 _global_variables() {
+  pkgs=()
   get_date=""
   source_publisher=""
   output_dir=""
@@ -76,12 +77,14 @@ _git_clone() {
 
 _aspe() {
   local \
-    _pub="${1}"
-  shift 1
-  local \
-    _pkgs=() \
+    _pub="${1}" \
+    _output_dir="${2}" \
+    _pkgs=()
+  shift \
+    2
   _pkgs=(
-    "$@")
+    "$@"
+  )
   export \
     GIT_TERMINAL_PROMPT=0
   for \
@@ -176,7 +179,7 @@ _show_config() {
   _msg_info "                 Get date:   $(_get "get" "date")"
   _msg_info "         Source publisher:   $(_get "source" "publisher")"
   _msg_info "         Output directory:   $(_get "output" "dir")"
-  _msg_info "                 Packages:   ${_pkgs[@]}"
+  _msg_info "                 Packages:   ${pkgs[@]}"
 }
 
 _globals
@@ -211,38 +214,20 @@ shift \
   $(( \
     OPTIND - 1 \
   ))
-
-while getopts 'p:o:h?' arg; do
-    case "${arg}" in
-        p) override_source_pub="${OPTARG}" ;;
-        o) override_output_dir="${OPTARG}" ;;
-        c) override_color="${OPTARG}" ;;
-        h|?) _usage ;;
-        *)
-           _msg_error \
-	     "Invalid argument '${arg}'" \
-	     0 && \
-           _usage \
-	     1
-           ;;
-    esac
-done
-
-shift $((OPTIND - 1))
-
-_pkgs=(
+pkgs+=(
   "$@"
 )
 if (( $# < 1 )); then
   _msg_error \
-    "No packages specified" 0
+    "No packages specified" \
+    0
   _usage \
     1
 fi
 app_opts+=(
   "${source_publisher}"
   "${output_dir}"
-  "${_pkgs[@]}"
+  "${pkgs[@]}"
 )
 _show_config
 _aspe \
