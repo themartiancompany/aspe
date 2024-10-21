@@ -72,7 +72,7 @@ _git_clone() {
         _git_repo \
 	  "${_pub}" \
 	  "${_pkg}")" \
-      "${_pkg}"
+      "${_work_dir}/${_pkg}"
 }
 
 _aspe() {
@@ -224,6 +224,7 @@ if (( $# < 1 )); then
   _usage \
     1
 fi
+_set_overrides
 app_opts+=(
   "${source_publisher}"
   "${output_dir}"
