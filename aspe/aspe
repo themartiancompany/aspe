@@ -70,8 +70,8 @@ _git_clone() {
     clone \
       "$( \
         _git_repo \
-	  "${_pub}" \
-	  "${_pkg}")" \
+          "${_pub}" \
+          "${_pkg}")" \
       "${_work_dir}/${_pkg}"
 }
 
