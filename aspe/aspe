@@ -68,11 +68,10 @@ _git_clone() {
     _pkg="${2}"
   git \
     clone \
-      "$( \
-        _git_repo \
-          "${_pub}" \
-          "${_pkg}")" \
-      "${_work_dir}/${_pkg}"
+      "$(_git_repo \
+           "${_pub}" \
+           "${_pkg}")" \
+      "${_output_dir}/${_pkg}"
 }
 
 _aspe() {
