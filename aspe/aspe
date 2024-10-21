@@ -2,33 +2,31 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-_globals() {
-  set -e -u
-  shopt -s extglob
-  
-  # Control the environment
-  umask \
-    0022
-  export \
-    LC_ALL="C.UTF-8"
-  # LC_ALL=C.UTF-8, unlike LC_ALL=C, does not override LANGUAGE.
-  # See https://sourceware.org/bugzilla/show_bug.cgi?id=16621 \
-  # and https://savannah.gnu.org/bugs/?62815
-  [[ -v LANGUAGE ]] && \
-    unset \
-      LANGUAGE
-  [[ -v SOURCE_DATE_EPOCH ]] || \
-    printf \
-      -v \
-        SOURCE_DATE_EPOCH \
-	'%(%s)T' \
-	-1
-  export \
-    SOURCE_DATE_EPOCH
-  app_name="$( \
-    basename \
-      "${BASH_SOURCE[0]}")"
-  override_pub=""
+_bin="$( \
+  dirname \
+    "$( \
+      command \
+        -v \
+	  "env")")"
+_lib="${_bin}/../lib"
+_share="${_bin}/../share"
+source \
+  "${_lib}/libcrash-bash/crash-bash"
+
+# Check all required programs
+# are available
+_requirements() {
+  _check_cmd \
+    'git'
+}
+
+# shellcheck disable=SC2034
+_global_variables() {
+  get_date=""
+  source_publisher=""
+  output_dir=""
+  color=""
+  quiet=""
 }
 
 # Get source from a selected publisher
@@ -110,55 +108,142 @@ _aspe() {
     GIT_TERMINAL_PROMPT
 }
 
-_usage() {
-  echo \
-    "Usage: ${app_name} [-p <publisher>] [pkgs]"
-}
-
-# Show an ERROR message then exit with status
-# $1: message string
-# $2: exit code number (with 0 does not exit)
-_msg_error() {
-  local \
-    _msg="${1}" \
-    _error=${2}
-  printf \
-    '[%s] ERROR: %s\n' \
-    "${app_name}" \
-    "${_msg}" >&2
-  if (( _error > 0 )); then
-    exit "${_error}"
+# Set defaults and, if present, overrides
+# from arch-grub command line option parameters
+_set_overrides() {
+  _set_override \
+    "get" \
+    "date" \
+    "$(_get_date_human)"
+  _set_override \
+    "output" \
+    "dir" \
+    "$(realpath \
+         $(pwd))"
+  _set_override \
+    "source" \
+    "publisher" \
+    "ur"
+if [[ -v override_color ]]; then
+    color="${override_color}"
+  elif [[ -z "${color}" ]]; then
+    color="n"
+  fi
+  if [[ -v override_quiet ]]; then
+    quiet="${override_quiet}"
+  elif [[ -z "${quiet}" ]]; then
+    quiet="y"
   fi
 }
 
-_globals
 
-while getopts 'p:h?' arg; do
+# Show help usage, with an exit status.
+# $1: exit status number.
+_usage() {
+  local \
+    _exit="${1}" \
+    _usage_text
+  IFS='' \
+    read \
+      -r \
+      -d '' \
+      _usage_text << \
+        ENDUSAGETEXT || true
+
+Usage:
+  $(_get "app" "name")
+    [options]
+    [packages]
+  options:
+     -p <origin>          Source publisher.
+			  Default: $(_get "source" "publisher")
+     -o <output_dir>      Output directory.
+			  Default: $(_get "output" "dir")
+     -c                   Colors.
+     -h                   This message.
+     -v                   Enable verbose output
+ENDUSAGETEXT
+  _printf \
+    '%s\n' \
+    "${_usage_text}"
+  exit \
+    "${_exit}"
+}
+
+# Shows configuration options.
+_show_config() {
+  _msg_info "${app_name} configuration"
+  _msg_info "                 Get date:   $(_get "get" "date")"
+  _msg_info "         Source publisher:   $(_get "source" "publisher")"
+  _msg_info "         Output directory:   $(_get "output" "dir")"
+  _msg_info "                 Packages:   ${_pkgs[@]}"
+}
+
+_globals
+_global_variables
+_requirements
+# shellcheck disable=SC2004
+# shellcheck disable=SC2034
+while \
+  getopts \
+    'p:o:cvh?' \
+    arg; do
+  case \
+    "${arg}" in
+    p) override_source_pub="${OPTARG}" ;;
+    o) override_output_dir="${OPTARG}" ;;
+    c) override_color="y" ;;
+    v) override_quiet="n" ;;
+    h|?) _set_overrides && \
+	 _usage \
+           0 ;;
+    *)
+    _msg_error \
+      "Invalid argument '${arg}'" \
+      0 && \
+    _set_overrides && \
+    _usage \
+      1
+    ;;
+  esac
+done
+shift \
+  $(( \
+    OPTIND - 1 \
+  ))
+
+while getopts 'p:o:h?' arg; do
     case "${arg}" in
-        p) override_pub="${OPTARG}" ;;
+        p) override_source_pub="${OPTARG}" ;;
+        o) override_output_dir="${OPTARG}" ;;
+        c) override_color="${OPTARG}" ;;
         h|?) _usage ;;
         *)
-            _msg_error \
-	      "Invalid argument '${arg}'" 0
-            _usage
-            ;;
+           _msg_error \
+	     "Invalid argument '${arg}'" \
+	     0 && \
+           _usage \
+	     1
+           ;;
     esac
 done
 
 shift $((OPTIND - 1))
 
 _pkgs=(
-  "$@")
-
-[[ "${override_pub}" == "" ]] && \
-  override_pub="archlinux"
-
+  "$@"
+)
 if (( $# < 1 )); then
   _msg_error \
     "No packages specified" 0
-  _usage
+  _usage \
+    1
 fi
-
-_aspe \
-  "${override_pub}" \
+app_opts+=(
+  "${source_publisher}"
+  "${output_dir}"
   "${_pkgs[@]}"
+)
+_show_config
+_aspe \
+  "${app_opts[@]}"
