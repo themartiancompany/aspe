@@ -65,9 +65,16 @@ _git_repo() {
 _git_clone() {
   local \
     _pub="${1}" \
-    _pkg="${2}"
+    _pkg="${2}" \
+    _clone_opts=()
+  if [[ "${quiet}" == "y" ]]; then
+    _clone_opts+=(
+      --quiet
+    )
+  fi
   git \
     clone \
+      "${_clone_opts[@]} \
       "$(_git_repo \
            "${_pub}" \
            "${_pkg}")" \
