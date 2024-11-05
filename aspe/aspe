@@ -74,7 +74,7 @@ _git_clone() {
   fi
   git \
     clone \
-      "${_clone_opts[@]} \
+      "${_clone_opts[@]}" \
       "$(_git_repo \
            "${_pub}" \
            "${_pkg}")" \
