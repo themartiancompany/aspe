@@ -199,7 +199,7 @@ while \
     arg; do
   case \
     "${arg}" in
-    p) override_source_pub="${OPTARG}" ;;
+    p) override_source_publisher="${OPTARG}" ;;
     o) override_output_dir="${OPTARG}" ;;
     c) override_color="y" ;;
     v) override_quiet="n" ;;
