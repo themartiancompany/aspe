@@ -36,6 +36,8 @@ _requirements() {
   _check_cmd \
     'evm-wallet'
   _check_cmd \
+    'evmfs'
+  _check_cmd \
     'ur-publishers' \
     'ur'
 }
@@ -44,7 +46,17 @@ _requirements() {
 _global_variables() {
   pkgs=()
   get_date=""
-  up_address=""
+  ur_address=""
+  ur_version=""
+  wallet_name=""
+  wallet_path=""
+  wallet_password=""
+  wallet_seed=""
+  wallet_address=""
+  target_network=""
+  api_key=""
+  deployments_dir=""
+  user_level=""
   source_origin=""
   source_publisher=""
   target_revision=""
@@ -154,7 +166,8 @@ _git_clone() {
 _contract_call_opts_setup() {
   local \
     _msg=() \
-    _evm_contract_call_opts=()
+    _evm_contract_call_opts=() \
+    _ur_cal_opts=()
   _evm_contract_call_opts+=(
     -n
       "${_target_network}"
@@ -170,47 +183,17 @@ _contract_call_opts_setup() {
     -C
       "${_ur_compiler_output}"
   )
-  _check_call_opts+=(
-    "${_fs_call_opts[@]}"
+  _validate_call_opts+=(
+    "${_ur_call_opts[@]}"
     -t
       "static"
   )
-  _publish_call_opts+=(
-    "${_fs_call_opts[@]}"
-    -t
-      "dynamic"
-  )
-  _verify_call_opts+=(
-    "${_fs_call_opts[@]}"
+  _retrieve_call_opts+=(
+    "${_ur_call_opts[@]}"
     -t
       "static"
-  )
-  _lock_call_opts+=(
-    "${_fs_call_opts[@]}"
-    -t
-      "dynamic"
-  )
-  _length_call_opts+=(
-    "${_evm_contract_call_opts[@]}"
-    -A
-      "${_ll_abi}"
-    -B
-      "${_ll_bytecode}"
-    -C
-      "${_ll_compiler_output}"
-    -t
-      "static"
-  )
-  _length_lock_call_opts+=(
-    "${_evm_contract_call_opts[@]}"
-    -A
-      "${_ll_abi}"
-    -B
-      "${_ll_bytecode}"
-    -C
-      "${_ll_compiler_output}"
-    -t
-      "dynamic"
+    -N
+      "${_wallet_name}"
   )
   _msg=(
     "evm-contract-call will be called"
@@ -220,23 +203,134 @@ _contract_call_opts_setup() {
     "${_msg[*]}"
 }
 
-_publisher_validate() {
+_recipe_uri_get() {
   local \
-    _publisher="${1}" \
-    _pkg="${2}" \
-    _validate_call_opts=()
+    _ur_address="${1}" \
+    _publisher="${2}" \
+    _pkg="${3}" \
+    _revision="${4}" \
+    _recipe_archive \
+    _price \
+    _purchased \
+    _msg=() \
+    _wallet_address
+  _purchased=""
+  _price="$( \
+    evm-contract-call \
+      "${_validate_call_opts[@]}" \
+      "${_ur_address}" \
+      "price" \
+      "${_pkg}" \
+      "${_publisher}" \
+      "${_revision}")"
+  if (( 0 < "${_price}" )); then
+    _msg=(
+      "revision '${_revision}' of package"
+      "'${_pkg}' by publisher"
+      "'${_publisher}' has price '${_price}'."
+    )
+    _msg_info \
+      "${_msg[*]}"
+    _purchased="$( \
+      evm-contract-call \
+        "${_validate_call_opts[@]}" \
+        "${_ur_address}" \
+        "purchased" \
+        "${_pkg}" \
+        "${_publisher}" \
+        "${_revision}")"
+  fi
+  if [[ "${_purchased}" == "false" ]]; then
+    _wallet_address="$( \
+      evm-wallet \
+        get \
+	  "${_wallet_name}" \
+	  "address")"
+    _msg=(
+      "wallet '${_wallet_name}'"
+      "and address '${_wallet_address}'"
+      "has not purchased the recipe."
+    )
+    _msg_error \
+      "${_msg[*]}" \
+      1
+  fi
+  _recipe_uri="$( \
+    evm-contract-call \
+      "${_validate_call_opts[@]}" \
+      "${_ur_address}" \
+      "readRecipe" \
+      "${_pkg}" \
+      "${_publisher}" \
+      "${_revision}")"
+  if [[ "${_recipe_uri}" == "" ]]; then
+    _msg=(
+      "target revision '${_revision}' of package"
+      "'${_pkg}' by publisher"
+      "'${_publisher}' does not exist or there has"
+      "been an error retrieving it."
+    )
+    _msg_error \
+      "${_msg[*]}" \
+      1
+  fi
+}
+
+_revision_latest_get() {
+  local \
+    _ur_address="${1}" \
+    _publisher="${2}" \
+    _pkg="${3}" \
+    _msg=()
+  _msg=(
+    "getting latest revision for"
+    "package '${_pkg}' and publisher"
+    "'${_publisher}'."
+  )
+  _revision="$( \
+    evm-contract-call \
+      "${_validate_call_opts[@]}" \
+      "${_ur_address}" \
+      "revNo" \
+      "${_pkg}" \
+      "${_publisher}")"
+}
+
+_recipe_get() {
 }
 
 _ur_get() {
   local \
-    _publisher="${1}" \
-    _pkg_dir="${2}" \
-    _pkg="${3}" \
-    _evm_contract_call_opts=()
+    _target_network="${1}" \
+    _ur_address="${2}" \
+    _publisher="${3}" \
+    _ur_abi="${4}" \
+    _ur_bytecode="${5}" \
+    _ur_compiler_output="${6}" \
+    _pkg_dir="${7}" \
+    _pkg="${8}" \
+    _revision="${9}" \
+    _validate_call_opts=() \
+    _retrieve_call_opts=() \
+    _recipe_uri
   _contract_call_opts_setup 
-  _publisher_validate \
+  if [[ "${_revision}" == "latest" || \
+        "${_revision}" == "" ]]; then
+    _revision_latest_get \
+      "${_ur_address}" \
+      "${_publisher}" \
+      "${_pkg}" \
+      "${_revision}"
+  fi
+  _recipe_uri_get \
+    "${_ur_address}" \
     "${_publisher}" \
-    "${_pkg}"
+    "${_pkg}" \
+    "${_revision}"
+  _recipe_get \
+    "${_pkg}" \
+    "${_recipe_uri}" \
+    "${_pkg_dir}"
 }
 
 _source_get_opts() {
@@ -247,9 +341,15 @@ _source_get_opts() {
       "_ur_get"
     )
     _cmd_args=(
-      "${_origin}"
+      "${_target_network}"
+      "${_ur_address}"
+      "${_publisher}"
+      "${_ur_abi}"
+      "${_ur_bytecode}"
+      "${_ur_compiler_output}"
       "${_pkg_dir}"
       "${_pkg}"
+      "${_revision}"
     )
   else
     _check_cmd \
@@ -298,21 +398,33 @@ _origins_sort() {
 
 _aspe() {
   local \
-    _origin="${1}" \
-    _publisher="${2}" \
-    _revision="${3}" \
-    _work_dir="${4}" \
-    _output_dir="${5}" \
+    _ur_address="${1}" \
+    _ur_version="${2}" \
+    _deployments_dir="${3}" \
+    _wallet_name="${4}" \
+    _wallet_path="${5}" \
+    _wallet_password="${6}" \
+    _wallet_seed="${7}" \
+    _target_network="${8}" \
+    _api_key_path="${9}" \
+    _origin="${10}" \
+    _publisher="${11}" \
+    _revision="${12}" \
+    _work_dir="${13}" \
+    _output_dir="${14}" \
     _pkgs=() \
     _origin \
     _origins=() \
     _pkg_dir \
     _retrieved \
+    _ur_abi \
+    _ur_bytecode \
+    _ur_compiler_output \
     _cmd=() \
     _cmd_args=() \
     _msg=()
   shift \
-    5
+    14
   _pkgs=(
     "$@"
   )
@@ -326,6 +438,24 @@ _aspe() {
     "${_origin}"
   _origins_sort \
     "${_origin}"
+  _ur_abi="$( \
+    _contract_abi_get \
+      "${_deployments_dir}" \
+      "${_target_network}" \
+      "UserRepository" \
+      "${_ur_version}")"
+  _ur_bytecode="$( \
+    _contract_bytecode_get \
+      "${_deployments_dir}" \
+      "${_target_network}" \
+      "UserRepository" \
+      "${_ur_version}")"
+  _ur_compiler_output="$( \
+    _contract_compiler_output_get \
+      "${_deployments_dir}" \
+      "${_target_network}" \
+      "UserRepository" \
+      "${_ur_version}")"
   for _pkg in "${_pkgs[@]}"; do
     _retrieved="false"
     _pkg_dir="${_work_dir}/${_pkg}"
@@ -401,6 +531,87 @@ if [[ -v override_color ]]; then
     "source" \
     "origin" \
     "ur"
+  _set_override \
+    "wallet" \
+    "name" \
+    "default"
+  _set_override \
+    "user" \
+    "level" \
+    "n"
+  _deployments_dir_auto_detect \
+    "ur" \
+    "$(_get \
+         "user" \
+         "level")"
+  _network_auto_detect \
+    "UserRepository" \
+    "$(_get \
+         "deployments" \
+         "dir")" \
+    "$(_get \
+         "user" \
+         "level")"
+  _api_key_auto_detect \
+    "$(_get \
+         "target" \
+         "network")"
+  _set_override \
+    "wallet" \
+    "path" \
+    "$(_wallet_path_get \
+         "evm-wallet" \
+         "$(_get \
+              "wallet" \
+              "name")")"
+  _secret_auto_detect \
+    "seed" \
+    "seed" \
+    "evm-wallet" \
+    "$(_get \
+         "wallet" \
+         "name")"
+  _secret_auto_detect \
+    "password" \
+    "plain" \
+    "evm-wallet" \
+    "$(_get \
+         "wallet" \
+         "name")"
+  _set_override \
+    "wallet" \
+    "address" \
+    "$(evm-wallet \
+         get \
+           "$(_get \
+                "wallet" \
+                "name")" \
+           "address")"
+  _contract_version_auto_detect \
+    "$(_get \
+         "deployments" \
+         "dir")" \
+    "UserRepository" \
+    "ur" \
+    "$(_get \
+         "target" \
+         "network")"
+  _contract_address_auto_detect \
+    "ur" \
+    "UserRepository" \
+    "ur" \
+    "$(_get \
+         "target" \
+         "network")" \
+    "$(_get \
+         "ur" \
+         "version")" \
+    "$(_get \
+         "user" \
+         "level")" \
+    "$(_get \
+         "deployments" \
+         "dir")"
   _source_publisher_auto_detect
   _set_override \
     "target" \
@@ -414,7 +625,18 @@ if [[ -v override_color ]]; then
 _usage() {
   local \
     _exit="${1}" \
+    _deployment \
+    _networks=() \
     _usage_text
+  _deployment="$( \
+    _get \
+      "deployments" \
+      "dir")/UserRepository"
+  _networks=( $( \
+    evm-contract-deployment-networks \
+      -A \
+      "${_deployment}")
+  )
   IFS='' \
     read \
       -r \
@@ -427,25 +649,54 @@ Usage:
   $(_get "app" "name")
     [options]
     [packages]
-  options:
-     -s <origin>          Source origin ('ur', 'gur', 'archlinux',
-                          'aur').
-			  Default: $(_get "source" "origin")
-     -p <publisher>       Source publisher. Valid for origins
-                          are 'ur' and 'gur'. For 'gur'it defaults to
-                          'themartiancompany', for 'ur' to the
-                          kirsh trusted Ur publisher.
-			  Default: $(_get "source" "publisher")
-     -w <work_dir>        Work directory.
-			  Default: $(_get "output" "dir")
-     -o <output_dir>      Output directory.
-			  Default: $(_get "output" "dir")
-     -n <revision>        Target recipe revision to retrieve.
-			  Default: $(_get "target" "revision")
 
-     -c                   Colors.
-     -h                   This message.
-     -v                   Enable verbose output
+networks:
+$(_display_networks \
+     "${_networks[@]}")
+
+  options:
+     -S <origin>            Source origin ('ur', 'gur', 'archlinux',
+                            'aur').
+			    Default: $(_get "source" "origin")
+     -P <publisher>         Source publisher. Valid for origins
+                            are 'ur' and 'gur'. For 'gur'it defaults to
+                            'themartiancompany', for 'ur' to the
+                            kirsh trusted Ur publisher.
+			    Default: $(_get "source" "publisher")
+     -W <work_dir>          Work directory.
+			    Default: $(_get "output" "dir")
+     -o <output_dir>        Output directory.
+			    Default: $(_get "output" "dir")
+     -r <revision>          Target recipe revision to retrieve.
+			    Default: $(_get "target" "revision")
+     -A <ur_address>        Address of the UserRepository
+                            contract on the network.
+                            Default: $(_get "ur" "address")
+     -V <ur_version>        Version of the target UserRepository
+                            contract.
+                            Default: $(_get "ur" "version")
+     -u                     Whether to retrieve user repository
+                            address from user directory or custom
+                            deployment.
+                            Default: $(_get "user" "level")
+     -d <deployments_dir>   Contracts deployments directory.
+                            Default: $(_get "deployments" "dir")
+     -N <wallet_name>       Wallet name.
+                            Default: $(_get "wallet" "name")
+     -w <wallet_path>       Wallet path.
+                            Default: $(_get "wallet" "path")
+     -p <wallet_password>   Wallet password.
+                            Default: $(_get "wallet" "password")
+     -s <wallet_seed>       Wallet seed path.
+                            Default: $(_get "wallet" "seed")
+     -n <network>           EVM network name (${_networks[*]}).
+                            Default: $(_get "target" "network")
+     -k <api_key>           Etherscan-like service key.
+                            Default: $(_get "api" "key")
+
+     -c                     Colors.
+     -h                     This message.
+     -v                     Enable verbose output
 ENDUSAGETEXT
   _printf \
     '%s\n' \
@@ -463,6 +714,16 @@ _show_config() {
   _msg_info "          Target revision:   $(_get "target" "revision")"
   _msg_info "           Work directory:   $(_get "work" "dir")"
   _msg_info "         Output directory:   $(_get "output" "dir")"
+  _msg_info "               Ur address:   $(_get "ur" "address")"
+  _msg_info "               Ur version:   $(_get "ur" "version")"
+  _msg_info "               User level:   $(_get "user" "level")"
+  _msg_info "    Deployments directory:   $(_get "deployments" "dir")"
+  _msg_info "              Wallet name:   $(_get "wallet" "name")"
+  _msg_info "              Wallet path:   $(_get "wallet" "path")"
+  _msg_info "          Wallet password:   $(_get "wallet" "password")"
+  _msg_info "              Wallet seed:   $(_get "wallet" "seed")"
+  _msg_info "           Target network:   $(_get "target" "network")"
+  _msg_info "                  API key:   $(_get "api" "key")"
   _msg_info "                 Packages:   ${pkgs[@]}"
 }
 
@@ -473,15 +734,25 @@ _requirements
 # shellcheck disable=SC2034
 while \
   getopts \
-    's:p:w:o:n:cvh?' \
+    'S:P:W:o:r:A:V:ud:N:w:p:s:n:k:cvh?' \
     arg; do
   case \
     "${arg}" in
-    s) override_source_origin="${OPTARG}" ;;
-    p) override_source_publisher="${OPTARG}" ;;
-    w) override_work_dir="${OPTARG}" ;;
+    S) override_source_origin="${OPTARG}" ;;
+    P) override_source_publisher="${OPTARG}" ;;
+    W) override_work_dir="${OPTARG}" ;;
     o) override_output_dir="${OPTARG}" ;;
-    n) override_target_revision="${OPTARG}" ;;
+    r) override_target_revision="${OPTARG}" ;;
+    A) override_ur_address="${OPTARG}" ;;
+    V) override_ur_version="${OPTARG}" ;;
+    u) override_user_level="y" ;;
+    d) override_deployments_dir="${OPTARG}" ;;
+    N) override_wallet_name="${OPTARG}" ;;
+    w) override_wallet_path="${OPTARG}" ;;
+    p) override_wallet_password="${OPTARG}" ;;
+    s) override_wallet_seed="${OPTARG}" ;;
+    n) override_target_network="${OPTARG}" ;;
+    k) override_api_key="${OPTARG}" ;;
     c) override_color="y" ;;
     v) override_quiet="n" ;;
     h|?) _set_overrides && \
@@ -513,6 +784,41 @@ if (( $# < 1 )); then
 fi
 _set_overrides
 app_opts+=(
+  "$( \
+    _get \
+      "ur" \
+      "address")"
+  "$( \
+    _get \
+      "ur" \
+      "version")"
+  "$(_get \
+       "deployments" \
+       "dir")"
+  "$( \
+    _get \
+      "wallet" \
+      "name")"
+  "$( \
+    _get \
+      "wallet" \
+      "path")"
+  "$( \
+    _get \
+      "wallet" \
+      "password")"
+  "$( \
+    _get \
+      "wallet" \
+      "seed")"
+  "$( \
+    _get \
+      "target" \
+      "network")"
+  "$( \
+    _get \
+      "api" \
+      "key")"
   "$(_get \
        "source" \
        "origin")"
