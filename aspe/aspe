@@ -8,25 +8,48 @@ _bin="$( \
       command \
         -v \
 	  "env")")"
-_lib="${_bin}/../lib"
-_share="${_bin}/../share"
-source \
-  "${_lib}/libcrash-bash/crash-bash"
+_lib="$( \
+  realpath \
+    "${_bin}/../lib")"
+_crash_bash="${_lib}/libcrash-bash/crash-bash"
+_libevm="${_lib}/libevm/libevm"
+_sourced \
+  "${_crash_bash}" 2>/dev/null || \
+  source \
+    "${_crash_bash}"
+_sourced \
+  "${_libevm}"
 
 # Check all required programs
 # are available
 _requirements() {
   _check_cmd \
-    'git'
+    'libevm-requirements' \
+    'libevm'
+  libevm-requirements
+  _check_cmd \
+    'evm-contract-call' \
+    'evm-contracts-tools'
+  _check_cmd \
+    'evm-contract-deployment-networks' \
+    'evm-contracts-tools'
+  _check_cmd \
+    'evm-wallet'
+  _check_cmd \
+    'ur-publishers' \
+    'ur'
 }
 
 # shellcheck disable=SC2034
 _global_variables() {
   pkgs=()
   get_date=""
+  up_address=""
   source_origin=""
   source_publisher=""
+  target_revision=""
   output_dir=""
+  work_dir=""
   color=""
   quiet=""
 }
@@ -40,11 +63,13 @@ _git_repo_uri_get() {
     _origin="${1}" \
     _publisher="${2}" \
     _pkg="${3}" \
-    _http
+    _http \
+    _ns
+  _ns="${_publisher}"
   if [[ "${_origin}" == "archlinux" ]]; then
     _http='https://gitlab.archlinux.org'
     echo \
-      "${_http}/${_origin}/packaging/packages/${_pkg}"
+      "${_http}/${_ns}/packaging/packages/${_pkg}"
   elif [[ "${_origin}" == "aur" ]]; then
     _http='https://aur.archlinux.org'
     echo \
@@ -53,11 +78,11 @@ _git_repo_uri_get() {
     _http="http://github.com"
     _ns="${_publisher}"
     echo \
-      "${_http}/${_ns}/${_pkg}-${_origin}"
+      "${_http}/${_ns}/${_pkg}-ur"
   fi
 }
 
-_clone_check() {
+_clone_validate() {
   local \
     _pkg_dir="${1}" \
     _msg=() \
@@ -82,6 +107,8 @@ _clone_check() {
     true)"
   if [[ "${_commit_last}" != "HEAD" ]]; then
     _retrieved="true"
+    unset \
+      GIT_TERMINAL_PROMPT
   elif [[ "${_commit_last}" == "HEAD" ]]; then
     _msg=(
       "cloned an empty repository,"
@@ -120,8 +147,96 @@ _git_clone() {
       "${_uri}" \
       "${_pkg_dir}" || \
     true
-  _check_clone \
+  _clone_validate \
     "${_pkg_dir}"
+}
+
+_contract_call_opts_setup() {
+  local \
+    _msg=() \
+    _evm_contract_call_opts=()
+  _evm_contract_call_opts+=(
+    -n
+      "${_target_network}"
+    -k
+      "${_api_key_path}"
+  )
+  _ur_call_opts+=(
+    "${_evm_contract_call_opts[@]}"
+    -A
+      "${_ur_abi}"
+    -B
+      "${_ur_bytecode}"
+    -C
+      "${_ur_compiler_output}"
+  )
+  _check_call_opts+=(
+    "${_fs_call_opts[@]}"
+    -t
+      "static"
+  )
+  _publish_call_opts+=(
+    "${_fs_call_opts[@]}"
+    -t
+      "dynamic"
+  )
+  _verify_call_opts+=(
+    "${_fs_call_opts[@]}"
+    -t
+      "static"
+  )
+  _lock_call_opts+=(
+    "${_fs_call_opts[@]}"
+    -t
+      "dynamic"
+  )
+  _length_call_opts+=(
+    "${_evm_contract_call_opts[@]}"
+    -A
+      "${_ll_abi}"
+    -B
+      "${_ll_bytecode}"
+    -C
+      "${_ll_compiler_output}"
+    -t
+      "static"
+  )
+  _length_lock_call_opts+=(
+    "${_evm_contract_call_opts[@]}"
+    -A
+      "${_ll_abi}"
+    -B
+      "${_ll_bytecode}"
+    -C
+      "${_ll_compiler_output}"
+    -t
+      "dynamic"
+  )
+  _msg=(
+    "evm-contract-call will be called"
+    "with base options '${_evm_contract_call_opts[*]}'"
+  )
+  _msg_info \
+    "${_msg[*]}"
+}
+
+_publisher_validate() {
+  local \
+    _publisher="${1}" \
+    _pkg="${2}" \
+    _validate_call_opts=()
+}
+
+_ur_get() {
+  local \
+    _publisher="${1}" \
+    _pkg_dir="${2}" \
+    _pkg="${3}" \
+    _evm_contract_call_opts=()
+  _contract_call_opts_setup 
+  _publisher_validate \
+    "${_publisher}" \
+    "${_pkg}"
 }
 
 _source_get_opts() {
@@ -131,7 +246,14 @@ _source_get_opts() {
     _cmd=(
       "_ur_get"
     )
+    _cmd_args=(
+      "${_origin}"
+      "${_pkg_dir}"
+      "${_pkg}"
+    )
   else
+    _check_cmd \
+      'git'
     _cmd=(
       "_git_clone"
     )
@@ -143,12 +265,46 @@ _source_get_opts() {
   fi
 }
 
+_origin_validate() {
+  local \
+    _target_origin="${1}" \
+  if [[ " ${_origins[*]} " != *" ${_target_origin}"* ]]; then
+    _msg_error \
+      "unknown origin '${_target_origin}'." \
+      1
+  fi
+}
+
+_origins_sort() {
+  local \
+    _target_origin="${1}" \
+    _origins_new=() \
+    _origin
+  _origins_new+=(
+    "${_target_origin}"
+  )
+  for _origin in \
+    "${_origins[@]}"; do
+    if [[ "${_origin}" != "${_target_origin}" ]]; then
+      _origins_new+=(
+        "${_origin}"
+      )
+    fi
+  done
+  _origins=(
+    "${_origins_new[@]}"
+  )
+}
+
 _aspe() {
   local \
     _origin="${1}" \
-    _work_dir="${2}" \
-    _output_dir="${3}" \
+    _publisher="${2}" \
+    _revision="${3}" \
+    _work_dir="${4}" \
+    _output_dir="${5}" \
     _pkgs=() \
+    _origin \
     _origins=() \
     _pkg_dir \
     _retrieved \
@@ -156,7 +312,7 @@ _aspe() {
     _cmd_args=() \
     _msg=()
   shift \
-    3
+    5
   _pkgs=(
     "$@"
   )
@@ -166,15 +322,10 @@ _aspe() {
     "aur"
     "archlinux"
   )
-  if [[ *" ${_origin} "* != " ${_origins[*]} " ]]; then
-    _msg_error \
-      "unknown origin '${_origin}'." \
-      1
-  fi
-  _origins=(
+  _origin_check \
     "${_origin}"
-    "${_origins[@]/${_origin}}"
-  )
+  _origins_sort \
+    "${_origin}"
   for _pkg in "${_pkgs[@]}"; do
     _retrieved="false"
     _pkg_dir="${_work_dir}/${_pkg}"
@@ -193,8 +344,31 @@ _aspe() {
 	1
     fi
   done
-  unset \
-    GIT_TERMINAL_PROMPT
+}
+
+_source_publisher_auto_detect() {
+  local \
+    _origin \
+    _publisher
+  _origin="$( \
+    _get \
+      "source" \
+      "origin")"
+  if [[ "${_origin}" == "gur" ]]; then
+    _publisher="themartiancompany"
+  elif [[ "${_origin}" == "ur" ]]; then
+    _publisher="$( \
+      evm-wallet \
+       get \
+         "${_wallet_name}" \
+         "address")"
+  elif [[ "${_origin}" == "archlinux" ]]; then
+    _publisher="archlinux"
+  fi
+  _set_override \
+    "source" \
+    "publisher" \
+    "${_publisher}"
 }
 
 # Set defaults and, if present, overrides
@@ -227,10 +401,11 @@ if [[ -v override_color ]]; then
     "source" \
     "origin" \
     "ur"
+  _source_publisher_auto_detect
   _set_override \
-    "source" \
-    "publisher" \
-    "themartiancompany"
+    "target" \
+    "revision" \
+    "latest"
 }
 
 
@@ -246,6 +421,7 @@ _usage() {
       -d '' \
       _usage_text << \
         ENDUSAGETEXT || true
+Build recipes retrieval tool.
 
 Usage:
   $(_get "app" "name")
@@ -264,6 +440,9 @@ Usage:
 			  Default: $(_get "output" "dir")
      -o <output_dir>      Output directory.
 			  Default: $(_get "output" "dir")
+     -n <revision>        Target recipe revision to retrieve.
+			  Default: $(_get "target" "revision")
+
      -c                   Colors.
      -h                   This message.
      -v                   Enable verbose output
@@ -281,6 +460,7 @@ _show_config() {
   _msg_info "                 Get date:   $(_get "get" "date")"
   _msg_info "            Source origin:   $(_get "source" "origin")"
   _msg_info "         Source publisher:   $(_get "source" "publisher")"
+  _msg_info "          Target revision:   $(_get "target" "revision")"
   _msg_info "           Work directory:   $(_get "work" "dir")"
   _msg_info "         Output directory:   $(_get "output" "dir")"
   _msg_info "                 Packages:   ${pkgs[@]}"
@@ -293,7 +473,7 @@ _requirements
 # shellcheck disable=SC2034
 while \
   getopts \
-    's:p:w:o:cvh?' \
+    's:p:w:o:n:cvh?' \
     arg; do
   case \
     "${arg}" in
@@ -301,6 +481,7 @@ while \
     p) override_source_publisher="${OPTARG}" ;;
     w) override_work_dir="${OPTARG}" ;;
     o) override_output_dir="${OPTARG}" ;;
+    n) override_target_revision="${OPTARG}" ;;
     c) override_color="y" ;;
     v) override_quiet="n" ;;
     h|?) _set_overrides && \
@@ -339,8 +520,11 @@ app_opts+=(
        "source" \
        "publisher")"
   "$(_get \
+       "target" \
+       "revision")"
+  "$(_get \
        "work" \
-       "directory")"
+       "dir")"
   "$(_get \
        "output" \
        "dir")"
