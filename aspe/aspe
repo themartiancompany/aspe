@@ -649,7 +649,7 @@ _source_get_opts() {
 
 _origin_validate() {
   local \
-    _target_origin="${1}" \
+    _target_origin="${1}"
   if [[ " ${_origins[*]} " != *" ${_target_origin}"* ]]; then
     _msg_error \
       "unknown origin '${_target_origin}'." \
@@ -676,6 +676,20 @@ _origins_sort() {
   _origins=(
     "${_origins_new[@]}"
   )
+}
+
+_work_dir_check() {
+  local \
+    _msg=()
+  if [[ ! -d "${_work_dir}" ]]; then
+    _msg=(
+      "work directory '${_work_dir}'"
+      "does not exist."
+    )
+    _msg_error \
+      "${_msg[*]}" \
+      1
+  fi
 }
 
 _aspe() {
@@ -711,6 +725,7 @@ _aspe() {
   _pkgs=(
     "$@"
   )
+  _work_dir_check
   _origins=(
     "ur"
     "gur"
@@ -781,7 +796,7 @@ _source_publisher_auto_detect() {
     _publisher="$( \
       evm-wallet \
        get \
-         "${_wallet_name}" \
+         "${wallet_name}" \
          "address")"
   elif [[ "${_origin}" == "archlinux" ]]; then
     _publisher="archlinux"
@@ -790,6 +805,22 @@ _source_publisher_auto_detect() {
     "source" \
     "publisher" \
     "${_publisher}"
+}
+
+_work_dir_auto_detect() {
+  local \
+    _work_dir
+  _work_dir="${HOME}/.cache/aspe"
+  mkdir \
+    -p \
+    "${_work_dir}"
+  chmod \
+    700 \
+    "${_work_dir}"
+  _set_override \
+    "work" \
+    "dir" \
+    "${_work_dir}"
 }
 
 # Set defaults and, if present, overrides
@@ -809,10 +840,7 @@ if [[ -v override_color ]]; then
     "get" \
     "date" \
     "$(_get_date_human)"
-  _set_override \
-    "work" \
-    "dir" \
-    "${HOME}/.cache/aspe"
+  _work_dir_auto_detect
   _set_override \
     "output" \
     "dir" \
