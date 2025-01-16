@@ -167,7 +167,7 @@ _contract_call_opts_setup() {
   local \
     _msg=() \
     _evm_contract_call_opts=() \
-    _ur_cal_opts=()
+    _ur_call_opts=()
   _evm_contract_call_opts+=(
     -n
       "${_target_network}"
@@ -290,12 +290,13 @@ _revision_latest_get() {
   )
   _msg_info \
     "${_msg[*]}"
-  _revno="$(evm-contract-call \
-              "${_validate_call_opts[@]}" \
-              "${_ur_address}" \
-              "revNo" \
-              "${_pkg}" \
-	      "${_publisher}")"
+  _revno="$( \
+    evm-contract-call \
+      "${_validate_call_opts[@]}" \
+      "${_ur_address}" \
+      "revNo" \
+      "${_pkg}" \
+      "${_publisher}")"
   if [[ "${_revno}" == "0" ]]; then
     _msg=(
       "publisher '${_publisher}'"
