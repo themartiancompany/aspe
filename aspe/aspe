@@ -215,31 +215,14 @@ _recipe_archive_uri_get() {
     _msg=() \
     _wallet_address
   _purchased=""
-  _price="$( \
+  _purchased="$( \
     evm-contract-call \
       "${_validate_call_opts[@]}" \
       "${_ur_address}" \
-      "price" \
+      "purchased" \
       "${_pkg}" \
       "${_publisher}" \
       "${_revision}")"
-  if (( 0 < "${_price}" )); then
-    _msg=(
-      "revision '${_revision}' of package"
-      "'${_pkg}' by publisher"
-      "'${_publisher}' has price '${_price}'."
-    )
-    _msg_info \
-      "${_msg[*]}"
-    _purchased="$( \
-      evm-contract-call \
-        "${_validate_call_opts[@]}" \
-        "${_ur_address}" \
-        "purchased" \
-        "${_pkg}" \
-        "${_publisher}" \
-        "${_revision}")"
-  fi
   if [[ "${_purchased}" == "false" ]]; then
     _wallet_address="$( \
       evm-wallet \
@@ -249,11 +232,38 @@ _recipe_archive_uri_get() {
     _msg=(
       "wallet '${_wallet_name}'"
       "and address '${_wallet_address}'"
-      "has not purchased the recipe."
+      "has not purchased revision '${_revision}'"
+      "of package '${_pkg}' by publisher '${_publisher}'".
     )
     _msg_error \
       "${_msg[*]}" \
-      1
+      0
+    _msg=(
+      "getting price for revision '${_revision}'"
+      "of package '${_pkg}'."
+    )
+    _msg_info \
+      "${_msg[*]}"
+    _price="$( \
+      evm-contract-call \
+        "${_validate_call_opts[@]}" \
+        "${_ur_address}" \
+        "price" \
+        "${_pkg}" \
+        "${_publisher}" \
+        "${_revision}")"
+    if (( 0 < "${_price}" )); then
+      _msg=(
+        "revision '${_revision}' of package"
+        "'${_pkg}' by publisher"
+        "'${_publisher}' can be purchased for"
+	"$'${_price}' by running"
+	"'ur purchase ${_pkg}'."
+      )
+      _msg_error \
+        "${_msg[*]}" \
+	1
+    fi
   fi
   _recipe_archive_uri="$( \
     evm-contract-call \
@@ -316,12 +326,18 @@ _revision_latest_get() {
   elif (( 0 < "${_revno}" )); then
     _revision="$(( \
       _revno - 1))"
-  else
     _msg=(
-      "error in retrieving"
-      "revision for package '${_pkg}'"
+      "latest revision for '${_pkg}'"
+      "is '${_revision}'."
     )
     _msg_info \
+      "${_msg[*]}"
+  else
+    _msg=(
+      "error while retrieving"
+      "revision for package '${_pkg}'"
+    )
+    _msg_error \
       "${_msg[*]}" \
       1
   fi
