@@ -287,6 +287,8 @@ _revision_latest_get() {
     "package '${_pkg}' and publisher"
     "'${_publisher}'."
   )
+  _msg_info \
+    "${_msg[*]}"
   _revision="$( \
     evm-contract-call \
       "${_validate_call_opts[@]}" \
