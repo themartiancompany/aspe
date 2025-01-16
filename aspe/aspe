@@ -281,7 +281,8 @@ _revision_latest_get() {
     _ur_address="${1}" \
     _publisher="${2}" \
     _pkg="${3}" \
-    _msg=()
+    _msg=() \
+    _revno
   _msg=(
     "getting latest revision for"
     "package '${_pkg}' and publisher"
@@ -289,13 +290,33 @@ _revision_latest_get() {
   )
   _msg_info \
     "${_msg[*]}"
-  _revision="$( \
-    evm-contract-call \
-      "${_validate_call_opts[@]}" \
-      "${_ur_address}" \
-      "revNo" \
-      "${_pkg}" \
-      "${_publisher}")"
+  _revno="$(evm-contract-call \
+              "${_validate_call_opts[@]}" \
+              "${_ur_address}" \
+              "revNo" \
+              "${_pkg}" \
+	      "${_publisher}")"
+  if [[ "${_revno}" == "0" ]]; then
+    _msg=(
+      "publisher '${_publisher}'"
+      "has published no '${_pkg}'"
+      "package."
+    )
+    _msg_error \
+      "${_msg[*]}" \
+      1
+  elif (( 0 < "${_revno}" )); then
+    _revision="$(( \
+      _revno - 1))"
+  else
+    _msg=(
+      "error in retrieving"
+      "revision for package '${_pkg}'"
+    )
+    _msg_info \
+      "${_msg[*]}" \
+      1
+  fi
 }
 
 _recipe_archive_get() {
@@ -597,8 +618,7 @@ _ur_get() {
     _revision_latest_get \
       "${_ur_address}" \
       "${_publisher}" \
-      "${_pkg}" \
-      "${_revision}"
+      "${_pkg}"
   fi
   _recipe_archive_uri_get \
     "${_ur_address}" \
