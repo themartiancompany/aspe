@@ -296,7 +296,131 @@ _revision_latest_get() {
       "${_publisher}")"
 }
 
-_recipe_get() {
+_recipe_archive_get() {
+  local \
+    _uri="${1}" \
+    _dest="${2}" \
+    _evmfs_opts=() \
+    _msg=()
+  _msg=(
+    "saving recipe in '${_dest}'"
+  )
+  _msg_info \
+    "${_msg[*]}"
+  if [[ "${quiet}" == "n" ]]; then
+    _evmfs_opts+=(
+      -v
+    )
+  fi
+  _evmfs_opts+=(
+    -o
+      "${_dest}"
+  )
+  evmfs \
+    "${_evmfs_opts[@]}" \
+    "${_uri}"
+}
+
+_signature_keyring_verify() {
+  local \
+    _gpg_out="${1}" \
+    _nopubkey_string \
+    _validsig_string
+   _nopubkey_string="$( \
+    echo \
+      "${_gpg_out}" | \
+      grep \
+        "^\[GNUPG:\] NO_PUBKEY " || \
+      true)"
+  _validsig_string="$( \
+    echo \
+      "${_gpg_out}" | \
+      grep \
+        "^\[GNUPG:\] GOODSIG " || \
+      true)"
+}
+
+_signature_author_verify() {
+  local \
+    _publisher="${1}" \
+    _gpg_out="${2}" \
+    _author_string \
+    _msg=() \
+    _unsigned
+  _author_string="$( \
+    echo \
+      "${_gpg_out}" | \
+      grep \
+        "^\[GNUPG:\] NEWSIG " || \
+      true)"
+  if [[ "${_author_string}" == "" ]]; then
+    _unsigned="$( \
+      echo \
+        "${_gpg_out}" | \
+        grep \
+          "^\[GNUPG:\] NODATA 3" || \
+        true)"
+    if [[ "${_unsigned}" != "" ]]; then
+      _msg=(
+        "the archive is not signed."
+      )
+    else
+      _msg=(
+        "unknown GNUPG error."
+      )
+    fi
+    _msg_error \
+      "${_msg[*]}" \
+      1
+  fi
+  _author="$( \
+    echo \
+      "${_author_string}" | \
+      awk \
+        '{print $3}')"
+  if [[ "${_author}" != *"@${_publisher}" ]]; then
+    _msg=(
+      "archive '${_archive}' not signed"
+      "by the correct author."
+    )
+    _msg_error \
+      "${_msg[*]}" \
+      1
+  fi
+}
+
+_recipe_validate() {
+  local \
+    _archive="${1}" \
+    _publisher="${2}" \
+    _gnupg_home \
+    _gpg_out \
+    _gpg_opts=() \
+    _author
+  _gnupg_home="${HOME}/.cache/ur/publishers/gnupg"
+  _gpg_opts+=(
+    --homedir
+      "${_gnupg_home}"
+    --with-colons
+    --status-fd
+      1
+    --verify
+  )
+  if [[ ! -e "${_archive}" ]]; then
+    _msg=(
+      "somehow the archive '${_archive}'"
+      "does not exist."
+    )
+    _msg_info \
+      "${_msg[*]}"
+  fi
+  _gpg_out="$( \
+    gpg \
+      "${_gpg_opts[@]}" \
+      "${_archive}" 2>/dev/null)"
+  _signature_author_verify \
+    "${_publisher}" \
+    "${_gpg_out}"
 }
 
 _ur_get() {
@@ -312,7 +436,9 @@ _ur_get() {
     _revision="${9}" \
     _validate_call_opts=() \
     _retrieve_call_opts=() \
-    _recipe_uri
+    _recipe_uri \
+    _recipe_archive
+  _recipe_archive="${_pkg_dir}/${_pkg}.tar.xz"
   _contract_call_opts_setup 
   if [[ "${_revision}" == "latest" || \
         "${_revision}" == "" ]]; then
@@ -328,9 +454,11 @@ _ur_get() {
     "${_pkg}" \
     "${_revision}"
   _recipe_get \
-    "${_pkg}" \
     "${_recipe_uri}" \
-    "${_pkg_dir}"
+    "${_recipe_archive}"
+  _recipe_validate \
+    "${_recipe_archive}" \
+    "${_publisher}"
 }
 
 _source_get_opts() {
