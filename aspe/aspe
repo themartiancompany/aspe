@@ -214,7 +214,11 @@ _recipe_archive_uri_get() {
     _purchased \
     _msg=() \
     _wallet_address
-  _purchased=""
+  _wallet_address="$( \
+    evm-wallet \
+      get \
+        "${_wallet_name}" \
+        "address")"
   _purchased="$( \
     evm-contract-call \
       "${_validate_call_opts[@]}" \
@@ -222,16 +226,12 @@ _recipe_archive_uri_get() {
       "purchased" \
       "${_pkg}" \
       "${_publisher}" \
-      "${_revision}")"
+      "${_revision}" \
+      "${_wallet_address}")"
   if [[ "${_purchased}" == "false" ]]; then
-    _wallet_address="$( \
-      evm-wallet \
-        get \
-	  "${_wallet_name}" \
-	  "address")"
     _msg=(
       "wallet '${_wallet_name}'"
-      "and address '${_wallet_address}'"
+      "identified by address '${_wallet_address}'"
       "has not purchased revision '${_revision}'"
       "of package '${_pkg}' by publisher '${_publisher}'".
     )
@@ -240,7 +240,8 @@ _recipe_archive_uri_get() {
       0
     _msg=(
       "getting price for revision '${_revision}'"
-      "of package '${_pkg}'."
+      "of package '${_pkg}' by publisher"
+      "'${_publisher}'."
     )
     _msg_info \
       "${_msg[*]}"
