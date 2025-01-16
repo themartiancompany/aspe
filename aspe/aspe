@@ -247,18 +247,16 @@ _recipe_archive_uri_get() {
         "${_pkg}" \
         "${_publisher}" \
         "${_revision}")"
-    if (( 0 < "${_price}" )); then
-      _msg=(
-        "revision '${_revision}' of package"
-        "'${_pkg}' by publisher"
-        "'${_publisher}' can be purchased for"
-	"$'${_price}' by running"
-	"'ur purchase ${_pkg}'."
-      )
-      _msg_error \
-        "${_msg[*]}" \
-	1
-    fi
+    _msg=(
+      "revision '${_revision}' of package"
+      "'${_pkg}' by publisher"
+      "'${_publisher}' can be purchased for"
+      "$'${_price}' by running"
+      "'ur purchase ${_pkg}'."
+    )
+    _msg_error \
+      "${_msg[*]}" \
+      1
   fi
   _recipe_archive_uri="$( \
     evm-contract-call \
