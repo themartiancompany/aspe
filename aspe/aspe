@@ -195,12 +195,6 @@ _contract_call_opts_setup() {
     -N
       "${_wallet_name}"
   )
-  _msg=(
-    "evm-contract-call will be called"
-    "with base options '${_evm_contract_call_opts[*]}'"
-  )
-  _msg_info \
-    "${_msg[*]}"
 }
 
 _recipe_archive_uri_get() {
