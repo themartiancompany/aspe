@@ -203,7 +203,7 @@ _contract_call_opts_setup() {
     "${_msg[*]}"
 }
 
-_recipe_uri_get() {
+_recipe_archive_uri_get() {
   local \
     _ur_address="${1}" \
     _publisher="${2}" \
@@ -255,7 +255,7 @@ _recipe_uri_get() {
       "${_msg[*]}" \
       1
   fi
-  _recipe_uri="$( \
+  _recipe_archive_uri="$( \
     evm-contract-call \
       "${_validate_call_opts[@]}" \
       "${_ur_address}" \
@@ -263,7 +263,7 @@ _recipe_uri_get() {
       "${_pkg}" \
       "${_publisher}" \
       "${_revision}")"
-  if [[ "${_recipe_uri}" == "" ]]; then
+  if [[ "${_recipe_archive_uri}" == "" ]]; then
     _msg=(
       "target revision '${_revision}' of package"
       "'${_pkg}' by publisher"
@@ -325,19 +325,66 @@ _signature_keyring_verify() {
   local \
     _gpg_out="${1}" \
     _nopubkey_string \
-    _validsig_string
+    _goodsig_string \
+    _fingerprint_string \
+    _errsig_string \
+    _fingerprint
    _nopubkey_string="$( \
     echo \
       "${_gpg_out}" | \
       grep \
         "^\[GNUPG:\] NO_PUBKEY " || \
       true)"
-  _validsig_string="$( \
+  _goodsig_string="$( \
     echo \
       "${_gpg_out}" | \
       grep \
         "^\[GNUPG:\] GOODSIG " || \
       true)"
+  if [[ "${_nopubkey_string}" == "" ]] && \
+     [[ "${_goodsig_string}" != "" ]]; then
+    _fingerprint_string="$( \
+      echo \
+        "${_gpg_out}" | \
+        grep \
+          "^\[GNUPG:\] KEY_CONSIDERED " || \
+        true)"
+    _fingerprint="$( \
+      echo \
+        "${_fingerprint_string}" | \
+        awk \
+          '{print $3}')"
+    _msg=(
+      "the key used to sign the archive"
+      "is correct and has fingerprint"
+      "'${_fingerprint}'."
+    )
+  elif [[ "${_nopubkey_string}" != "" ]] && \
+       [[ "${_goodsig_string}" == "" ]]; then
+    _errsig_string="$( \
+      echo \
+        "${_gpg_out}" | \
+        grep \
+          "^\[GNUPG:\] ERRSIG " || \
+        true)"
+    _fingerprint="$( \
+      echo \
+        "${_errsig_string}" | \
+        awk \
+          '{print $9}')"
+    _msg=(
+      "archive signed with unknown"
+      "fingerprint '${_fingerprint}'."
+      "If you are sure the fingerprint"
+      "is indeed correct run"
+      "'ur-publishers update'"
+      "to update the Ur publishers"
+      "signatures' database."
+    )
+    _msg_error \
+      "${_msg[*]}" \
+      1
+  fi
 }
 
 _signature_author_verify() {
@@ -389,7 +436,7 @@ _signature_author_verify() {
   fi
 }
 
-_recipe_validate() {
+_recipe_archive_validate() {
   local \
     _archive="${1}" \
     _publisher="${2}" \
@@ -421,6 +468,109 @@ _recipe_validate() {
   _signature_author_verify \
     "${_publisher}" \
     "${_gpg_out}"
+  _signature_keyring_verify \
+    "${_gpg_out}"
+}
+
+_archive_contents_read() {
+  local \
+    _archive="${1}" \
+    _tar_cmd \
+    _content \
+    _contents=() \
+    _msg=()
+  _tar_cmd="tf"
+  mapfile \
+    -d \
+    $'\n' \
+    _contents < \
+    <(tar \
+        "${_tar_cmd}" \
+        "${_archive}" || \
+      true)
+  for _content in "${_contents[@]}"; do
+    _archive_contents+=(
+      "${_content%$'\n'}"
+    )
+  done
+  if [[ "${_archive_contents[*]}" == "" ]]; then
+    _msg=(
+      "corrupted or empty archive '${_archive}'."
+    )
+    _msg_error \
+      "${_msg[*]}" \
+      1
+  fi
+}
+
+_archive_contents_check() {
+  local \
+    _pkg="${1}" \
+    _archive="${2}" \
+    _archive_contents=() \
+    _file \
+    _msg=()
+  _msg=(
+    "verifying '${_archive}'"
+    "integrity for package '${_pkg}'."
+  )
+  _msg_info \
+    "${_msg[*]}" \
+    1
+  _archive_contents_read \
+    "${_archive}"
+  for _file in "${_archive_contents[@]}"; do
+    if [[ "${_file}" != "${_pkg}/*" ]]; then
+      _msg=(
+        "invalid archive '${_archive}':"
+	"all files must reside in the '${_pkg}/'"
+	"directory."
+      )
+      _msg_error \
+        "${_msg[*]}" \
+	1
+    fi
+  done
+}
+
+_recipe_archive_extract() {
+  local \
+    _pkg="${1}" \
+    _recipe_archive="${2}" \
+    _pkg_dir="${3}" \
+    _msg=() \
+    _tar_archive \
+    _integrity_error \
+    _tar_opts=() \
+    _tar_cmd \
+    _gpg_opts=() \
+    _archive_contents=() \
+    _file
+  _tar_archive="${_pkg_dir}/${_pkg}.tar.xz"
+  _gpg_opts+=(
+    --homedir
+      "${_gnupg_home}"
+    --output
+      "${_tar_archive}"
+  )
+  gpg \
+    "${_gpg_opts[@]}" \
+    "${_recipe_archive}"
+  _archive_contents_check \
+    "${_pkg}" \
+    "${_tar_archive}"
+  _tar_cmd="xf"
+  if [[ "${quiet}" == "n" ]]; then
+    _tar_cmd+="v"
+  fi
+  _tar_opts+=(
+    -C
+      "${_pkg_dir}"
+    "${_tar_cmd}"
+  )
+  tar \
+    "${_tar_opts[@]}" \
+    "${_recipe_archive}"
 }
 
 _ur_get() {
@@ -436,9 +586,9 @@ _ur_get() {
     _revision="${9}" \
     _validate_call_opts=() \
     _retrieve_call_opts=() \
-    _recipe_uri \
+    _recipe_archive_uri \
     _recipe_archive
-  _recipe_archive="${_pkg_dir}/${_pkg}.tar.xz"
+  _recipe_archive="${_pkg_dir}/${_pkg}.tar.xz.gpg"
   _contract_call_opts_setup 
   if [[ "${_revision}" == "latest" || \
         "${_revision}" == "" ]]; then
@@ -448,17 +598,21 @@ _ur_get() {
       "${_pkg}" \
       "${_revision}"
   fi
-  _recipe_uri_get \
+  _recipe_archive_uri_get \
     "${_ur_address}" \
     "${_publisher}" \
     "${_pkg}" \
     "${_revision}"
-  _recipe_get \
-    "${_recipe_uri}" \
+  _recipe_archive_get \
+    "${_recipe_archive_uri}" \
     "${_recipe_archive}"
-  _recipe_validate \
+  _recipe_archive_validate \
     "${_recipe_archive}" \
     "${_publisher}"
+  _recipe_archive_extract \
+    "${_pkg}" \
+    "${_recipe_archive}" \
+    "${_pkg_dir}"
 }
 
 _source_get_opts() {
@@ -544,6 +698,7 @@ _aspe() {
     _origin \
     _origins=() \
     _pkg_dir \
+    _recipe_dir \
     _retrieved \
     _ur_abi \
     _ur_bytecode \
@@ -593,6 +748,14 @@ _aspe() {
       "${_cmd[@]}" \
         "${_cmd_args[@]}"
       if [[ "${_retrieved}" == "true" ]]; then
+	if [[ "${_origin}" == "ur" ]]; then
+          _recipe_dir="${_pkg_dir}/${_pkg}" 
+	else
+          _recipe_dir="${_pkg_dir}" 
+	fi
+        mv \
+          "${_recipe_dir}" \
+	  "${_out_dir}"
         break
       fi
     done
