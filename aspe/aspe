@@ -732,7 +732,7 @@ _aspe() {
     "aur"
     "archlinux"
   )
-  _origin_check \
+  _origin_validate \
     "${_origin}"
   _origins_sort \
     "${_origin}"
