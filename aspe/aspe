@@ -290,6 +290,13 @@ _revision_latest_get() {
   )
   _msg_info \
     "${_msg[*]}"
+  evm-contract-call \
+    -v \
+    "${_validate_call_opts[@]}" \
+    "${_ur_address}" \
+    "revNo" \
+    "${_pkg}" \
+    "${_publisher}"
   _revno="$( \
     evm-contract-call \
       "${_validate_call_opts[@]}" \
