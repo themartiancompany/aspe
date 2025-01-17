@@ -480,10 +480,20 @@ _signature_author_verify() {
       "${_author_string}" | \
       awk \
         '{print $3}')"
+  if [[ "${_author}" == "" ]]; then
+    _msg=(
+      "archive '${_archive}' is"
+      "missing an author."
+    )
+    _msg_error \
+      "${_msg[*]}" \
+      1
+  fi
   if [[ "${_author}" != *"@${_publisher}" ]]; then
     _msg=(
-      "archive '${_archive}' not signed"
-      "by the correct author."
+      "archive '${_archive}' is signed"
+      "by '${_author}' while it should"
+      "be signed by '${_publisher}'."
     )
     _msg_error \
       "${_msg[*]}" \
