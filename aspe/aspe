@@ -449,6 +449,12 @@ _signature_author_verify() {
     _author_string \
     _msg=() \
     _unsigned
+  _publisher="$( \
+    echo \
+      "${_publisher}" | \
+      tr \
+        '[:upper:]' \
+	'[:lower:]')"
   _author_string="$( \
     echo \
       "${_gpg_out}" | \
@@ -479,7 +485,10 @@ _signature_author_verify() {
     echo \
       "${_author_string}" | \
       awk \
-        '{print $3}')"
+        '{print $3}' | \
+        tr \
+	  '[:upper:]' \
+	  '[:lower:]')"
   if [[ "${_author}" == "" ]]; then
     _msg=(
       "archive '${_archive}' is"
