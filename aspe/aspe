@@ -646,8 +646,8 @@ _recipe_archive_extract() {
   _tar_opts+=(
     --directory
       "${_pkg_dir}"
-    -f
     -x
+    -f
   )
   tar \
     "${_tar_opts[@]}" \
