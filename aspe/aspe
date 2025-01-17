@@ -659,6 +659,8 @@ _ur_get() {
     _recipe_archive_uri \
     _recipe_archive \
     _revision_latest
+  _pkg_dir_setup \
+    "${_pkg_dir}"
   _recipe_archive="${_pkg_dir}/${_pkg}.tar.xz.gpg"
   _contract_call_opts_setup 
   _revision_latest_get \
@@ -715,6 +717,7 @@ _source_get_opts() {
     )
     _cmd_args=(
       "${_origin}"
+      "${_publisher}"
       "${_pkg_dir}"
       "${_pkg}"
     )
@@ -750,6 +753,17 @@ _origins_sort() {
   _origins=(
     "${_origins_new[@]}"
   )
+}
+
+_pkg_dir_setup() {
+  local \
+    _dir="${1}"
+  mkdir \
+    -p \
+    "${_dir}"
+  chmod \
+    700 \
+    "${_dir}"
 }
 
 _work_dir_check() {
