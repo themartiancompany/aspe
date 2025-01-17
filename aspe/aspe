@@ -651,7 +651,7 @@ _recipe_archive_extract() {
   )
   tar \
     "${_tar_opts[@]}" \
-    "${_recipe_archive}"
+    "${_tar_archive}"
 }
 
 _revision_validate() {
