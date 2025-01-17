@@ -628,6 +628,7 @@ _recipe_archive_extract() {
         "${_gnupg_home}"
       --output
         "${_tar_archive}"
+      --decrypt
     )
     gpg \
       "${_gpg_opts[@]}" \
