@@ -257,7 +257,20 @@ _recipe_archive_uri_get() {
     _msg_error \
       "${_msg[*]}" \
       1
+  elif [[ "${_purchased}" == "" ]]; then
+    _msg=(
+      "error retrieving the purchasing"
+      "status of the package by the user"
+    )
+    _msg_error \
+      "${_msg[*]}" \
+      1
   fi
+  _msg=(
+    "retrieving recipe URI"
+  )
+  _msg_info \
+    "${_msg[*]}"
   _recipe_archive_uri="$( \
     evm-contract-call \
       "${_retrieve_call_opts[@]}" \
@@ -351,7 +364,8 @@ _recipe_archive_get() {
   )
   evmfs \
     "${_evmfs_opts[@]}" \
-    "${_uri}"
+    get \
+      "${_uri}"
 }
 
 _signature_keyring_verify() {
