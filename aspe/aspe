@@ -549,17 +549,20 @@ _recipe_archive_validate() {
 _archive_contents_read() {
   local \
     _archive="${1}" \
-    _tar_cmd \
+    _tar_opts=() \
     _content \
     _contents=() \
     _msg=()
-  _tar_cmd="tf"
+  _tar_opts+=(
+    -t
+    -f
+  )
   mapfile \
     -d \
     $'\n' \
     _contents < \
     <(tar \
-        "${_tar_cmd}" \
+        "${_tar_opts[@]}" \
         "${_archive}" || \
       true)
   for _content in "${_contents[@]}"; do
@@ -616,7 +619,6 @@ _recipe_archive_extract() {
     _tar_archive \
     _integrity_error \
     _tar_opts=() \
-    _tar_cmd \
     _gpg_opts=() \
     _archive_contents=() \
     _file
@@ -636,15 +638,17 @@ _recipe_archive_extract() {
   _archive_contents_check \
     "${_pkg}" \
     "${_tar_archive}"
-  _tar_cmd="xf"
-  if [[ "${quiet}" == "n" ]]; then
-    _tar_cmd+="v"
-  fi
   _tar_opts+=(
+    -x
+    -f
     -C
       "${_pkg_dir}"
-    "${_tar_cmd}"
   )
+  if [[ "${quiet}" == "n" ]]; then
+    _tar_opts+=(
+      -v
+    )
+  fi
   tar \
     "${_tar_opts[@]}" \
     "${_recipe_archive}"
