@@ -641,7 +641,7 @@ _recipe_archive_extract() {
   _tar_opts+=(
     -x
     -f
-    -C
+    --directory
       "${_pkg_dir}"
   )
   if [[ "${quiet}" == "n" ]]; then
