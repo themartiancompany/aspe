@@ -251,7 +251,7 @@ _recipe_archive_uri_get() {
       "revision '${_revision}' of package"
       "'${_pkg}' by publisher"
       "'${_publisher}' can be purchased for"
-      "$'${_price}' by running"
+      "\$${_price} by running"
       "'ur purchase ${_pkg}'."
     )
     _msg_error \
@@ -310,7 +310,7 @@ _revision_latest_get() {
       "${_msg[*]}" \
       1
   elif (( 0 < "${_revno}" )); then
-    _revision="$(( \
+    _revision_latest="$(( \
       _revno - 1))"
     _msg=(
       "latest revision for '${_pkg}'"
@@ -606,6 +606,29 @@ _recipe_archive_extract() {
     "${_recipe_archive}"
 }
 
+_revision_validate() {
+  local \
+    _revision="${1}" \
+    _revision_latest="${2}" \
+    _msg=()
+  if (( "${_revision}" < "${_revision_latest}" )); then
+    _msg=(
+      "getting revision '${_revision}',"
+      "while latest is '${_revision_latest}'."
+    )
+    _msg_warning \
+      "${_msg[*]}"
+  elif (( "${_revision}" > "${_revision_latest}" )); then
+    _msg=(
+      "trying to get revision '${_revision}',"
+      "while latest is '${_revision_latest}'."
+    )
+    _msg_error \
+      "${_msg[*]}" \
+      1
+  fi
+}
+
 _ur_get() {
   local \
     _target_network="${1}" \
@@ -620,16 +643,21 @@ _ur_get() {
     _validate_call_opts=() \
     _retrieve_call_opts=() \
     _recipe_archive_uri \
-    _recipe_archive
+    _recipe_archive \
+    _revision_latest
   _recipe_archive="${_pkg_dir}/${_pkg}.tar.xz.gpg"
   _contract_call_opts_setup 
+  _revision_latest_get \
+    "${_ur_address}" \
+    "${_publisher}" \
+    "${_pkg}"
   if [[ "${_revision}" == "latest" || \
         "${_revision}" == "" ]]; then
-    _revision_latest_get \
-      "${_ur_address}" \
-      "${_publisher}" \
-      "${_pkg}"
+    _revision="${_revision_latest}"
   fi
+  _revision_validate \
+    "${_revision}" \
+    "${_revision_latest}"
   _recipe_archive_uri_get \
     "${_ur_address}" \
     "${_publisher}" \
@@ -831,6 +859,13 @@ _source_publisher_auto_detect() {
          "${wallet_name}" \
          "address")"
   elif [[ "${_origin}" == "archlinux" ]]; then
+    _msg=(
+      "Ur publisher not specified,"
+      "purchasing own package recipe"
+      "if published."
+    )
+    _msg_warning \
+      "${_msg[*]}"
     _publisher="archlinux"
   fi
   _set_override \
