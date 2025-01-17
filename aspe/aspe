@@ -117,10 +117,13 @@ _clone_validate() {
       rev-parse \
         HEAD 2>/dev/null || \
     true)"
-  if [[ "${_commit_last}" != "HEAD" ]]; then
-    _retrieved="true"
-    unset \
-      GIT_TERMINAL_PROMPT
+
+  if [[ "${_commit_last}" == "" ]]; then
+    _msg=(
+      "repository not cloned."
+    )
+    _msg_warning \
+      "${_msg[*]}"
   elif [[ "${_commit_last}" == "HEAD" ]]; then
     _msg=(
       "cloned an empty repository,"
@@ -131,6 +134,11 @@ _clone_validate() {
     rm \
       -rf \
       "${_pkg_dir}"
+  elif [[ "${_commit_last}" != "HEAD" && \
+	  "${_commit_last}" != "" ]]; then
+    _retrieved="true"
+    unset \
+      GIT_TERMINAL_PROMPT
   fi
 }
 
