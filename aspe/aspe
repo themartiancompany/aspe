@@ -949,6 +949,8 @@ _source_publisher_auto_detect() {
     _ur_publisher_auto_detect
   elif [[ "${_origin}" == "gur" ]]; then
     _publisher="themartiancompany"
+  elif [[ "${_origin}" == "aur" ]]; then
+    _publisher=""
   elif [[ "${_origin}" == "archlinux" ]]; then
     _publisher="archlinux"
   fi
