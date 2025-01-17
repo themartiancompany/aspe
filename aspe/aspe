@@ -920,6 +920,13 @@ _aspe() {
       _msg_error \
         "${_msg[*]}" \
 	1
+    elif [[ "${_retrieved}" == "true" ]]; then
+      _msg=(
+        "build sources for '${_pkg}'"
+        "correctly retrieved."
+      )
+      _msg_info \
+        "${_msg[*]}"
     fi
   done
 }
