@@ -260,7 +260,7 @@ _recipe_archive_uri_get() {
   fi
   _recipe_archive_uri="$( \
     evm-contract-call \
-      "${_validate_call_opts[@]}" \
+      "${_retrieve_call_opts[@]}" \
       "${_ur_address}" \
       "readRecipe" \
       "${_pkg}" \
