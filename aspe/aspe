@@ -638,17 +638,17 @@ _recipe_archive_extract() {
   _archive_contents_check \
     "${_pkg}" \
     "${_tar_archive}"
-  _tar_opts+=(
-    -x
-    -f
-    --directory
-      "${_pkg_dir}"
-  )
   if [[ "${quiet}" == "n" ]]; then
     _tar_opts+=(
       -v
     )
   fi
+  _tar_opts+=(
+    --directory
+      "${_pkg_dir}"
+    -f
+    -x
+  )
   tar \
     "${_tar_opts[@]}" \
     "${_recipe_archive}"
