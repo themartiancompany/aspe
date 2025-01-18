@@ -952,20 +952,30 @@ _source_publisher_auto_detect() {
   local \
     _origin \
     _publisher
+  _set_override \
+    "source" \
+    "publisher" \
+    ""
   _origin="$( \
     _get \
       "source" \
       "origin")"
-  if [[ "${_origin}" == "ur" ]]; then
-    _ur_publisher_auto_detect
-  elif [[ "${_origin}" == "gur" ]]; then
-    _publisher="themartiancompany"
-  elif [[ "${_origin}" == "aur" ]]; then
-    _publisher=""
-  elif [[ "${_origin}" == "archlinux" ]]; then
-    _publisher="archlinux"
+  _publisher="$( \
+    _get \
+      "source" \
+      "publisher")"
+  if [[ "${_publisher}" == "" ]]; then
+    if [[ "${_origin}" == "ur" ]]; then
+      _ur_publisher_auto_detect
+    elif [[ "${_origin}" == "gur" ]]; then
+      _publisher="themartiancompany"
+    elif [[ "${_origin}" == "aur" ]]; then
+      _publisher=""
+    elif [[ "${_origin}" == "archlinux" ]]; then
+      _publisher="archlinux"
+    fi
   fi
-  _set_override \
+  _set \
     "source" \
     "publisher" \
     "${_publisher}"
