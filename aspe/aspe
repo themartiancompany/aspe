@@ -559,11 +559,36 @@ _recipe_archive_validate() {
     )
     _msg_info \
       "${_msg[*]}"
+  elif [[ -e "${_archive}" ]]; then
+    _msg=(
+      "Found archive at location"
+      "'${_archive}.'"
+    )
   fi
-  _gpg_out="$( \
-    gpg \
-      "${_gpg_opts[@]}" \
-      "${_archive}" 2>/dev/null)"
+  if [[ -e "${}" ]]; then
+  fi
+  if [[ "${quiet}" == "y" ]]; then
+    _gpg_out="$( \
+      gpg \
+        "${_gpg_opts[@]}" \
+        "${_archive}" 2>/dev/null || \
+      true)"
+  elif [[ "${quiet}" == "n" ]]; then
+    _gpg_out="$( \
+      gpg \
+        "${_gpg_opts[@]}" \
+        "${_archive}" || \
+      true)"
+  fi
+  if [[ "${_gpg_out}" == "" ]]; then
+    _msg=(
+      "Error verifying archive signature."
+      "Try running 'ur-publishers update'."
+    )
+    _msg_error \
+      "${_msg[*]}" \
+      1
+  fi
   _signature_author_verify \
     "${_publisher}" \
     "${_gpg_out}"
@@ -727,6 +752,14 @@ _ur_get() {
   if [[ "${_verify_skip}" == "n" ]]; then
     _recipe_archive+=".gpg"
     _gnupg_home="${HOME}/.cache/ur/publishers/gnupg"
+    if [[ ! -e "${_gnupg_home}" ]]; then
+      _msg=(
+        "User Repository publishers database"
+	"does not exist. Running 'ur-publishers update'."
+      )
+      ur-publishers \
+        update
+    fi
   fi
   _contract_call_opts_setup 
   _revision_latest_get \
