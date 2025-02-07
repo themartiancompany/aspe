@@ -467,19 +467,38 @@ _signature_author_verify() {
     _gpg_out="${2}" \
     _author_string \
     _msg=() \
-    _unsigned
+    _unsigned \
+    _patterns=() \
+    _pattern
+  _patterns=(
+    "^\[GNUPG:\] NEWSIG "
+    "^\[GNUPG:\] VALIDSIG "
+  )
   _publisher="$( \
     echo \
       "${_publisher}" | \
       tr \
         '[:upper:]' \
 	'[:lower:]')"
-  _author_string="$( \
-    echo \
-      "${_gpg_out}" | \
-      grep \
-        "^\[GNUPG:\] NEWSIG " || \
-      true)"
+  for _pattern in "${_patterns[@]}"; do
+    _author_string="$( \
+      echo \
+        "${_gpg_out}" | \
+        grep \
+	  "${_pattern}" || \
+        true)"
+    _author="$( \
+      echo \
+        "${_author_string}" | \
+        awk \
+          '{print $3}' | \
+          tr \
+            '[:upper:]' \
+            '[:lower:]')"
+    if [[ "${_author}" != "" ]]; then
+      break
+    fi
+  done
   if [[ "${_author_string}" == "" ]]; then
     _unsigned="$( \
       echo \
@@ -489,25 +508,20 @@ _signature_author_verify() {
         true)"
     if [[ "${_unsigned}" != "" ]]; then
       _msg=(
-        "the archive is not signed."
+        "The archive is not signed."
       )
     else
       _msg=(
-        "unknown GNUPG error."
+        "Unknown GNUPG error."
+        "GNUPG output:"
       )
     fi
     _msg_error \
       "${_msg[*]}" \
-      1
-  fi
-  _author="$( \
+      0
     echo \
-      "${_author_string}" | \
-      awk \
-        '{print $3}' | \
-        tr \
-	  '[:upper:]' \
-	  '[:lower:]')"
+      "${_gpg_out}"
+  fi
   if [[ "${_author}" == "" ]]; then
     _msg=(
       "archive '${_archive}' is"
