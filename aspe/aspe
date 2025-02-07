@@ -565,8 +565,6 @@ _recipe_archive_validate() {
       "'${_archive}.'"
     )
   fi
-  if [[ -e "${}" ]]; then
-  fi
   if [[ "${quiet}" == "y" ]]; then
     _gpg_out="$( \
       gpg \
