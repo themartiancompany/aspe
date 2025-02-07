@@ -262,7 +262,7 @@ _recipe_archive_uri_get() {
       "'${_pkg}' by publisher"
       "'${_publisher}' can be purchased for"
       "\$${_price} by running"
-      "'ur purchase ${_pkg}'."
+      "'ur-purchase ${_pkg}'."
     )
     _msg_error \
       "${_msg[*]}" \
@@ -359,7 +359,7 @@ _recipe_archive_get() {
     _evmfs_opts=() \
     _msg=()
   _msg=(
-    "saving recipe in '${_dest}'"
+    "Saving recipe in '${_dest}'."
   )
   _msg_info \
     "${_msg[*]}"
@@ -375,7 +375,17 @@ _recipe_archive_get() {
   evmfs \
     "${_evmfs_opts[@]}" \
     get \
-      "${_uri}"
+      "${_uri}" || \
+    true
+  if [[ ! -e "${_dest}" ]]; then
+    _msg=(
+      "Error saving the build"
+      "recipe in '${_dest}'."
+    )
+    _msg_error \
+      "${_msg[*]}" \
+      1
+  fi
 }
 
 _signature_keyring_verify() {
