@@ -741,6 +741,7 @@ _ur_get() {
     _verify_skip="${10}" \
     _validate_call_opts=() \
     _retrieve_call_opts=() \
+    _ur_publishers_opts=() \
     _recipe_archive_uri \
     _recipe_archive \
     _revision_latest \
@@ -757,7 +758,15 @@ _ur_get() {
         "User Repository publishers database"
 	"does not exist. Running 'ur-publishers update'."
       )
+      _msg_info \
+        "${_msg[*]}"
+      if [[ "${quiet}" == "n" ]]; then
+        _ur_publishers_opts+=(
+	  -v
+        )
+      fi
       ur-publishers \
+        "${_ur_publishers_opts[@]}" \
         update
     fi
   fi
