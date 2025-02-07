@@ -337,7 +337,7 @@ _revision_latest_get() {
       _revno - 1))"
     _msg=(
       "latest revision for '${_pkg}'"
-      "is '${_revision}'."
+      "is '${_revision_latest}'."
     )
     _msg_info \
       "${_msg[*]}"
