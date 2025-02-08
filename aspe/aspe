@@ -464,8 +464,7 @@ _signature_keyring_verify() {
 _newkey_author_extract(){
   local \
     _gpg_out="${1}" \
-    _pattern \
-    _author
+    _pattern
   _pattern="^\[GNUPG:\] NEWSIG "
   _author_string="$( \
     echo \
@@ -481,8 +480,6 @@ _newkey_author_extract(){
         tr \
           '[:upper:]' \
           '[:lower:]')"
-  echo \
-    "${_author}"
 }
 
 _validkey_author_extract(){
@@ -525,8 +522,6 @@ _validkey_author_extract(){
   rm \
     -rf \
     "${_pkg_dir}/${_fingerprint}.asc"
-  echo \
-    "${_author}"
 }
 
 _signature_author_verify() {
@@ -534,27 +529,22 @@ _signature_author_verify() {
     _publisher="${1}" \
     _gpg_out="${2}" \
     _author_string \
+    _author \
     _msg=() \
     _unsigned \
     _patterns=() \
     _pattern
-  _patterns=(
-    "^\[GNUPG:\] NEWSIG "
-    "^\[GNUPG:\] VALIDSIG "
-  )
   _publisher="$( \
     echo \
       "${_publisher}" | \
       tr \
         '[:upper:]' \
 	'[:lower:]')"
-  _author="$( \
-    _newkey_author_extract \
-      "${_gpg_out}")"
+  _newkey_author_extract \
+    "${_gpg_out}"
   if [[ "${_author}" == "" ]]; then
-    _author="$( \
-      _validkey_author_extract \
-        "${_gpg_out}")"
+    _validkey_author_extract \
+      "${_gpg_out}"
   fi
   if [[ "${_author_string}" == "" ]]; then
     _unsigned="$( \
