@@ -476,10 +476,7 @@ _newkey_author_extract(){
     echo \
       "${_author_string}" | \
       awk \
-        '{print $3}' | \
-        tr \
-          '[:upper:]' \
-          '[:lower:]')"
+        '{print $3}')"
 }
 
 _validkey_author_extract(){
@@ -546,6 +543,12 @@ _signature_author_verify() {
     _validkey_author_extract \
       "${_gpg_out}"
   fi
+  _author="$( \
+    echo \
+      "${_author}" | \
+      tr \
+        '[:upper:]' \
+        '[:lower:]')"
   if [[ "${_author_string}" == "" ]]; then
     _unsigned="$( \
       echo \
@@ -581,7 +584,7 @@ _signature_author_verify() {
   if [[ "${_author}" != *"@${_publisher}" ]]; then
     _msg=(
       "archive '${_archive}' is signed"
-      "by '${_author}' while it should"
+      "by '${_author#*@}' while it should"
       "be signed by '${_publisher}'."
     )
     _msg_error \
