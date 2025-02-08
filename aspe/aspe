@@ -461,6 +461,74 @@ _signature_keyring_verify() {
   fi
 }
 
+_newkey_author_extract(){
+  local \
+    _gpg_out="${1}" \
+    _pattern \
+    _author
+  _pattern="^\[GNUPG:\] NEWSIG "
+  _author_string="$( \
+    echo \
+      "${_gpg_out}" | \
+      grep \
+        "${_pattern}" || \
+      true)"
+  _author="$( \
+    echo \
+      "${_author_string}" | \
+      awk \
+        '{print $3}' | \
+        tr \
+          '[:upper:]' \
+          '[:lower:]')"
+  echo \
+    "${_author}"
+}
+
+_validkey_author_extract(){
+  local \
+    _gpg_out="${1}" \
+    _pattern \
+    _fingerprint \
+    _gpg_opts=() \
+    _gpg_key_info_opts=()
+  _gpg_opts+=(
+    --homedir
+      "${_gnupg_home}"
+    --export
+    --armor
+  )
+  _gpg_key_info_opts+=(
+    -o
+      "email"
+  )
+  _pattern="^\[GNUPG:\] VALIDSIG "
+  _author_string="$( \
+    echo \
+      "${_gpg_out}" | \
+      grep \
+        "${_pattern}" || \
+      true)"
+  _fingerprint="$( \
+    echo \
+      "${_author_string}" | \
+      awk \
+        '{print $3}')"
+  gpg \
+    "${_gpg_opts[@]}" \
+    "${_fingerprint}" > \
+    "${_pkg_dir}/${_fingerprint}.asc"
+  _author="$( \
+    gpg-key-info \
+      "${_gpg_key_info_opts[@]}" \
+      "${_pkg_dir}/${_fingerprint}.asc")"
+  rm \
+    -rf \
+    "${_pkg_dir}/${_fingerprint}.asc"
+  echo \
+    "${_author}"
+}
+
 _signature_author_verify() {
   local \
     _publisher="${1}" \
@@ -480,25 +548,14 @@ _signature_author_verify() {
       tr \
         '[:upper:]' \
 	'[:lower:]')"
-  for _pattern in "${_patterns[@]}"; do
-    _author_string="$( \
-      echo \
-        "${_gpg_out}" | \
-        grep \
-	  "${_pattern}" || \
-        true)"
+  _author="$( \
+    _newkey_author_extract \
+      "${_gpg_out}")"
+  if [[ "${_author}" == "" ]]; then
     _author="$( \
-      echo \
-        "${_author_string}" | \
-        awk \
-          '{print $3}' | \
-          tr \
-            '[:upper:]' \
-            '[:lower:]')"
-    if [[ "${_author}" != "" ]]; then
-      break
-    fi
-  done
+      _validkey_author_extract \
+        "${_gpg_out}")"
+  fi
   if [[ "${_author_string}" == "" ]]; then
     _unsigned="$( \
       echo \
