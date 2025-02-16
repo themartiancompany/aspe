@@ -536,7 +536,7 @@ _signature_author_verify() {
       "${_publisher}" | \
       tr \
         '[:upper:]' \
-	'[:lower:]')"
+        '[:lower:]')"
   _newkey_author_extract \
     "${_gpg_out}"
   if [[ "${_author}" == "" ]]; then
@@ -708,7 +708,8 @@ _archive_contents_check() {
   _archive_contents_read \
     "${_archive}"
   for _file in "${_archive_contents[@]}"; do
-    if [[ "${_file}" != "${_pkg}/"* ]]; then
+    if [[ "${_file}" != "${_pkg}/"* && \
+	  "${_file}" != *"/" ]]; then
       _msg=(
         "found '${_file}' in archive '${_archive}',"
 	"but all files must reside in the '${_pkg}/'"
