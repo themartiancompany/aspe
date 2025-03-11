@@ -126,7 +126,7 @@ _clone_validate() {
   )
   if [[ ! -d "${_pkg_dir}" ]]; then
     _msg=(
-      "cloning into '${_pkg_dir}'"
+      "Cloning into '${_pkg_dir}'"
       "failed."
     )
     _msg_warning \
@@ -141,13 +141,13 @@ _clone_validate() {
 
   if [[ "${_commit_last}" == "" ]]; then
     _msg=(
-      "repository not cloned."
+      "Repository not cloned."
     )
     _msg_warning \
       "${_msg[*]}"
   elif [[ "${_commit_last}" == "HEAD" ]]; then
     _msg=(
-      "cloned an empty repository,"
+      "Cloned an empty repository,"
       "deleting."
     )
     _msg_warning \
@@ -253,7 +253,7 @@ _recipe_archive_uri_get() {
       "${_wallet_address}")"
   if [[ "${_purchased}" == "false" ]]; then
     _msg=(
-      "wallet '${_wallet_name}'"
+      "Wallet '${_wallet_name}'"
       "identified by address '${_wallet_address}'"
       "has not purchased revision '${_revision}'"
       "of package '${_pkg}' by publisher '${_publisher}'".
@@ -262,7 +262,7 @@ _recipe_archive_uri_get() {
       "${_msg[*]}" \
       0
     _msg=(
-      "getting price for revision '${_revision}'"
+      "Getting price for revision '${_revision}'"
       "of package '${_pkg}' by publisher"
       "'${_publisher}'."
     )
@@ -277,7 +277,7 @@ _recipe_archive_uri_get() {
         "${_publisher}" \
         "${_revision}")"
     _msg=(
-      "revision '${_revision}' of package"
+      "Revision '${_revision}' of package"
       "'${_pkg}' by publisher"
       "'${_publisher}' can be purchased for"
       "\$${_price} by running"
@@ -288,7 +288,7 @@ _recipe_archive_uri_get() {
       1
   elif [[ "${_purchased}" == "" ]]; then
     _msg=(
-      "error retrieving the purchasing"
+      "Error retrieving the purchasing"
       "status of the package by the user"
     )
     _msg_error \
@@ -296,7 +296,7 @@ _recipe_archive_uri_get() {
       1
   fi
   _msg=(
-    "retrieving recipe URI"
+    "Retrieving recipe URI"
   )
   _msg_info \
     "${_msg[*]}"
@@ -310,7 +310,7 @@ _recipe_archive_uri_get() {
       "${_revision}")"
   if [[ "${_recipe_archive_uri}" == "" ]]; then
     _msg=(
-      "target revision '${_revision}' of package"
+      "Target revision '${_revision}' of package"
       "'${_pkg}' by publisher"
       "'${_publisher}' does not exist or there has"
       "been an error retrieving it."
@@ -329,7 +329,7 @@ _revision_latest_get() {
     _msg=() \
     _revno
   _msg=(
-    "getting latest revision for"
+    "Getting latest revision for"
     "package '${_pkg}' and publisher"
     "'${_publisher}'."
   )
@@ -344,7 +344,7 @@ _revision_latest_get() {
       "${_publisher}")"
   if [[ "${_revno}" == "0" ]]; then
     _msg=(
-      "publisher '${_publisher}'"
+      "Publisher '${_publisher}'"
       "has published no '${_pkg}'"
       "package."
     )
@@ -355,14 +355,14 @@ _revision_latest_get() {
     _revision_latest="$(( \
       _revno - 1))"
     _msg=(
-      "latest revision for '${_pkg}'"
+      "Latest revision for '${_pkg}'"
       "is '${_revision_latest}'."
     )
     _msg_info \
       "${_msg[*]}"
   else
     _msg=(
-      "error while retrieving"
+      "Error while retrieving"
       "revision for package '${_pkg}'"
     )
     _msg_error \
@@ -448,7 +448,7 @@ _signature_keyring_verify() {
         awk \
           '{print $3}')"
     _msg=(
-      "the key used to sign the archive"
+      "The key used to sign the archive"
       "is correct and has fingerprint"
       "'${_fingerprint}'."
     )
@@ -466,7 +466,7 @@ _signature_keyring_verify() {
         awk \
           '{print $9}')"
     _msg=(
-      "archive signed with unknown"
+      "Archive signed with unknown"
       "fingerprint '${_fingerprint}'."
       "If you are sure the fingerprint"
       "is indeed correct run"
@@ -551,11 +551,8 @@ _signature_author_verify() {
     _patterns=() \
     _pattern
   _publisher="$( \
-    echo \
-      "${_publisher}" | \
-      tr \
-        '[:upper:]' \
-        '[:lower:]')"
+    _lower \
+      "${_publisher}")"
   _newkey_author_extract \
     "${_gpg_out}"
   if [[ "${_author}" == "" ]]; then
@@ -563,11 +560,8 @@ _signature_author_verify() {
       "${_gpg_out}"
   fi
   _author="$( \
-    echo \
-      "${_author}" | \
-      tr \
-        '[:upper:]' \
-        '[:lower:]')"
+    _lower \
+      "${_author}")"
   if [[ "${_author_string}" == "" ]]; then
     _unsigned="$( \
       echo \
@@ -637,7 +631,7 @@ _recipe_archive_validate() {
   )
   if [[ ! -e "${_archive}" ]]; then
     _msg=(
-      "somehow the archive '${_archive}'"
+      "Somehow the archive '${_archive}'"
       "does not exist."
     )
     _msg_info \
@@ -719,7 +713,7 @@ _archive_contents_check() {
     _file \
     _msg=()
   _msg=(
-    "verifying '${_archive}'"
+    "Verifying '${_archive}'"
     "integrity for package '${_pkg}'."
   )
   _msg_info \
@@ -728,15 +722,15 @@ _archive_contents_check() {
     "${_archive}"
   for _file in "${_archive_contents[@]}"; do
     if [[ "${_file}" != "${_pkg}/"* && \
-	  "${_file}" != *"/" ]]; then
+          "${_file}" != *"/" ]]; then
       _msg=(
-        "found '${_file}' in archive '${_archive}',"
-	"but all files must reside in the '${_pkg}/'"
-	"directory."
+        "Found '${_file}' in archive '${_archive}',"
+        "but all files must reside in the '${_pkg}/'"
+        "directory."
       )
       _msg_error \
         "${_msg[*]}" \
-	1
+        1
     fi
   done
 }
@@ -1058,15 +1052,15 @@ _aspe() {
     done
     if [[ "${_retrieved}" == "false" ]]; then
       _msg=(
-        "error retrieving '${_pkg}'"
+        "Error retrieving '${_pkg}'"
         "sources."
       )
       _msg_error \
         "${_msg[*]}" \
-	1
+        1
     elif [[ "${_retrieved}" == "true" ]]; then
       _msg=(
-        "build sources for '${_pkg}'"
+        "Build sources for '${_pkg}'"
         "correctly retrieved."
       )
       _msg_info \
