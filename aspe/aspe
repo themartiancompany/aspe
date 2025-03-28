@@ -587,7 +587,7 @@ _signature_author_verify() {
   fi
   if [[ "${_author}" == "" ]]; then
     _msg=(
-      "archive '${_archive}' is"
+      "Archive '${_archive}' is"
       "missing an author."
     )
     _msg_error \
@@ -596,7 +596,7 @@ _signature_author_verify() {
   fi
   if [[ "${_author}" != *"@${_publisher}" ]]; then
     _msg=(
-      "archive '${_archive}' is signed"
+      "Archive '${_archive}' is signed"
       "by '${_author#*@}' while it should"
       "be signed by '${_publisher}'."
     )
