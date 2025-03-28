@@ -697,7 +697,7 @@ _archive_contents_read() {
   done
   if [[ "${_archive_contents[*]}" == "" ]]; then
     _msg=(
-      "corrupted or empty archive '${_archive}'."
+      "Corrupted or empty archive '${_archive}'."
     )
     _msg_error \
       "${_msg[*]}" \
@@ -787,14 +787,14 @@ _revision_validate() {
     _msg=()
   if (( "${_revision}" < "${_revision_latest}" )); then
     _msg=(
-      "getting revision '${_revision}',"
+      "Getting revision '${_revision}',"
       "while latest is '${_revision_latest}'."
     )
     _msg_warning \
       "${_msg[*]}"
   elif (( "${_revision}" > "${_revision_latest}" )); then
     _msg=(
-      "trying to get revision '${_revision}',"
+      "Trying to get revision '${_revision}',"
       "while latest is '${_revision_latest}'."
     )
     _msg_error \
@@ -966,7 +966,7 @@ _work_dir_check() {
     _msg=()
   if [[ ! -d "${_work_dir}" ]]; then
     _msg=(
-      "work directory '${_work_dir}'"
+      "Work directory '${_work_dir}'"
       "does not exist."
     )
     _msg_error \
@@ -1172,77 +1172,49 @@ _set_overrides() {
     "n"
   _deployments_dir_auto_detect \
     "ur" \
-    "$(_get \
-         "user" \
-         "level")"
+    "${user_level}"
   _network_auto_detect \
     "UserRepository" \
-    "$(_get \
-         "deployments" \
-         "dir")" \
-    "$(_get \
-         "user" \
-         "level")"
+    "${deployments_dir}" \
+    "${user_level}"
   _api_key_auto_detect \
-    "$(_get \
-         "target" \
-         "network")"
+    "${target_network}"
   _set_override \
     "wallet" \
     "path" \
     "$(_wallet_path_get \
          "evm-wallet" \
-         "$(_get \
-              "wallet" \
-              "name")")"
+	 "${wallet_name}")"
   _secret_auto_detect \
     "seed" \
     "seed" \
     "evm-wallet" \
-    "$(_get \
-         "wallet" \
-         "name")"
+    "${wallet_name}"
   _secret_auto_detect \
     "password" \
     "plain" \
     "evm-wallet" \
-    "$(_get \
-         "wallet" \
-         "name")"
+    "${wallet_name}"
   _set_override \
     "wallet" \
     "address" \
     "$(evm-wallet \
          get \
-           "$(_get \
-                "wallet" \
-                "name")" \
+	   "${wallet_name}" \
            "address")"
   _contract_version_auto_detect \
-    "$(_get \
-         "deployments" \
-         "dir")" \
+    "${deployments_dir}" \
     "UserRepository" \
     "ur" \
-    "$(_get \
-         "target" \
-         "network")"
+    "${target_network}"
   _contract_address_auto_detect \
     "ur" \
     "UserRepository" \
     "ur" \
-    "$(_get \
-         "target" \
-         "network")" \
-    "$(_get \
-         "ur" \
-         "version")" \
-    "$(_get \
-         "user" \
-         "level")" \
-    "$(_get \
-         "deployments" \
-         "dir")"
+    "${target_network}" \
+    "${ur_version}" \
+    "${user_level}" \
+    "${deployments_dir}"
   _source_publisher_auto_detect
   _set_override \
     "target" \
