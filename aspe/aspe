@@ -1239,10 +1239,7 @@ _usage() {
     _deployment \
     _networks=() \
     _usage_text
-  _deployment="$( \
-    _get \
-      "deployments" \
-      "dir")/UserRepository"
+  _deployment="${deployments_dir}/UserRepository"
   _networks=( $( \
     evm-contract-deployment-networks \
       -A \
@@ -1257,7 +1254,7 @@ _usage() {
 Build recipes retrieval tool.
 
 Usage:
-  $(_get "app" "name")
+  ${app_name}
     [options]
     [packages]
 
