@@ -1270,13 +1270,13 @@ $(_display_networks \
                             are 'ur' and 'gur'. For 'gur'it defaults to
                             'themartiancompany', for 'ur' to the
                             kirsh trusted Ur publisher.
-			    Default: ${source_publisher}
+                            Default: ${source_publisher}
      -W <work_dir>          Work directory.
 			    Default: ${output_dir}
      -o <output_dir>        Output directory.
 			    Default: ${output_dir}
      -r <revision>          Target recipe revision to retrieve.
-			    Default: ${target_revision}
+                            Default: ${target_revision}
      -A <ur_address>        Address of the UserRepository
                             contract on the network.
                             Default: ${ur_address}
@@ -1302,8 +1302,8 @@ $(_display_networks \
      -k <api_key>           Etherscan-like service key.
                             Default: ${api_key}
      -f                     If enabled attempts to retrieve the
-                            source from any of the available
-			    sources.
+                            build recipes from any of the available
+                            sources.
                             Default: ${retrieve_force}
 
      -c                     Colors.
