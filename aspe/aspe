@@ -67,17 +67,10 @@ _global_variables() {
   get_date=""
   ur_address=""
   ur_version=""
-  wallet_name=""
-  wallet_path=""
-  wallet_password=""
-  wallet_seed=""
-  wallet_address=""
-  target_network=""
-  api_key=""
+  _libevm_global_variables
+  _libevm_app_global_variables
   retrieve_force=""
   verify_skip=""
-  deployments_dir=""
-  user_level=""
   source_origin=""
   source_publisher=""
   target_revision=""
@@ -1163,86 +1156,35 @@ _set_overrides() {
     "origin" \
     "ur"
   _set_override \
-    "wallet" \
-    "name" \
-    "default"
-  _set_override \
     "user" \
     "level" \
     "n"
   _deployments_dir_auto_detect \
     "ur" \
-    "$(_get \
-         "user" \
-         "level")"
+    "${user_level}"
   _network_auto_detect \
     "UserRepository" \
-    "$(_get \
-         "deployments" \
-         "dir")" \
-    "$(_get \
-         "user" \
-         "level")"
+    "${deployments_dir}" \
+    "${user_level}"
   _api_key_auto_detect \
-    "$(_get \
-         "target" \
-         "network")"
-  _set_override \
-    "wallet" \
-    "path" \
-    "$(_wallet_path_get \
-         "evm-wallet" \
-         "$(_get \
-              "wallet" \
-              "name")")"
-  _secret_auto_detect \
-    "seed" \
-    "seed" \
+    "${target_network}"
+  _wallet_overrides_set \
     "evm-wallet" \
-    "$(_get \
-         "wallet" \
-         "name")"
-  _secret_auto_detect \
-    "password" \
-    "plain" \
-    "evm-wallet" \
-    "$(_get \
-         "wallet" \
-         "name")"
-  _set_override \
-    "wallet" \
-    "address" \
-    "$(evm-wallet \
-         get \
-           "$(_get \
-                "wallet" \
-                "name")" \
-           "address")"
+    "default" \
+    "y"
   _contract_version_auto_detect \
-    "$(_get \
-         "deployments" \
-         "dir")" \
+    "${deployments_dir}" \
     "UserRepository" \
     "ur" \
-    "$(_get \
-         "target" \
-         "network")"
+    "${target_network}"
   _contract_address_auto_detect \
     "ur" \
     "UserRepository" \
     "ur" \
-    "$(_get \
-         "target" \
-         "network")" \
-    "$(_get \
-         "ur" \
-         "version")" \
-    "$(_get \
-         "user" \
-         "level")" \
-    "$(_get \
-         "deployments" \
-         "dir")"
+    "${target_network}" \
+    "${ur_version}" \
+    "${user_level}" \
+    "${deployments_dir}"
   _source_publisher_auto_detect
   _set_override \
     "target" \
